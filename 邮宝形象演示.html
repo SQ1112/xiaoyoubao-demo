@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小邮宝 · AI校园管家</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --brand:#4a90d9; --brand-light:#e8f2fc; --bg1:#eef4fb; --bg2:#dce9f7; --bg3:#cfe2f3;
+  --text:#234; --text-sub:#567; --card:#fff; --border:#e3edf7;
+  --bolt1-x:60%; --bolt1-y:9%; --bolt1-w:13%; --bolt2-x:75%; --bolt2-y:17%; --bolt2-w:8%; --halo-x:68%; --halo-y:12%;
+}
+body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 60%,var(--bg3) 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+
+.app { width:1100px; max-width:96vw; height:760px; max-height:92vh; background:var(--card); border-radius:20px; overflow:hidden; box-shadow:0 18px 50px rgba(50,90,140,.22); position:relative; display:flex; }
+
+/* ===== 顶部搜索栏 ===== */
+.top-search { position:absolute; top:0; left:0; right:0; height:56px; background:var(--card); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; padding:0 20px; z-index:20; }
+.ts-back { border:none; background:var(--brand-light); color:var(--brand); width:38px; height:38px; border-radius:10px; font-size:18px; cursor:pointer; flex-shrink:0; }
+.ts-input-wrap { flex:1; position:relative; }
+.ts-input { width:100%; border:none; border-radius:20px; padding:8px 16px 8px 36px; font-size:14px; color:var(--text); outline:none; transition:border .2s; background:transparent; }
+.ts-input::placeholder { color:transparent; }
+.ts-input:focus { border-color:var(--brand); }
+.ts-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:16px; color:#9ab; }
+.ts-dropdown { position:absolute; top:42px; left:0; right:0; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 30px rgba(50,90,140,.15); display:none; z-index:30; max-height:300px; overflow-y:auto; }
+.ts-dropdown.show { display:block; }
+.ts-item { padding:10px 16px; font-size:13px; color:var(--text-sub); cursor:pointer; display:flex; align-items:center; gap:8px; transition:background .15s; }
+.ts-item:hover { background:var(--brand-light); }
+.ts-item .del { margin-left:auto; color:#c00; font-size:11px; opacity:.5; cursor:pointer; }
+.ts-item .del:hover { opacity:1; }
+.ts-clear { padding:10px 16px; font-size:12px; color:#e00; cursor:pointer; border-top:1px solid var(--border); }
+.ts-clear:hover { background:#fef0f0; }
+
+/* ===== 视图容器 ===== */
+.view { flex:1; position:relative; padding-top:56px; overflow:hidden; display:flex; flex-direction:column; }
+
+/* ===== 首页 ===== */
+#homeView { display:flex; flex-direction:column; padding:22px 36px; flex:1; min-height:0; overflow-y:auto; }
+.brand-row { display:flex; align-items:center; gap:16px; margin-bottom:8px; }
+.brand-logo { width:52px; height:52px; border-radius:14px; background:var(--brand-light); display:flex; align-items:center; justify-content:center; font-size:28px; }
+.brand-title { font-size:28px; font-weight:700; color:var(--text); } .brand-title em { color:var(--brand); font-style:normal; }
+.brand-sub { font-size:14px; color:#8aa; margin-top:4px; }
+.id-badge { position:absolute; top:68px; right:36px; display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:20px; padding:6px 12px 6px 6px; cursor:pointer; box-shadow:0 3px 10px rgba(74,144,217,.08); z-index:15; }
+@media (max-width:760px){ .id-badge { position:static; margin:0 0 12px; display:inline-flex; } }
+.id-badge .avatar { width:30px; height:30px; border-radius:50%; background:var(--brand-light); display:flex; align-items:center; justify-content:center; font-size:16px; }
+.id-badge .role { font-size:13px; color:var(--text-sub); font-weight:600; } .id-badge .role em { font-style:normal; color:var(--brand); }
+.hello { margin:20px 0 18px; font-size:16px; color:var(--text-sub); } .hello b { color:var(--brand); }
+.grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.card { background:linear-gradient(180deg,var(--card),var(--brand-light)); border:1px solid var(--border); border-radius:16px; padding:16px 16px; cursor:pointer; transition:all .25s; position:relative; overflow:hidden; }
+.card:hover { transform:translateY(-4px); box-shadow:0 10px 24px rgba(74,144,217,.18); border-color:#bcd8f0; }
+.card .icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:10px; }
+.card h3 { font-size:16px; color:var(--text); margin-bottom:5px; display:flex; align-items:center; gap:6px; }
+.card p { font-size:12px; color:#8aa; line-height:1.4; }
+.card .go { position:absolute; right:14px; top:14px; font-size:16px; color:#b8cfe6; opacity:.6; transition:all .2s; } .card:hover .go { opacity:1; transform:translateX(3px); }
+.c-life .icon{background:#fff3e0;} .c-life h3{color:#e8862a;} .c-schol .icon{background:#fde9ec;} .c-schol h3{color:#d9566f;}
+.c-help .icon{background:#e9f7ef;} .c-help h3{color:#3a9d6a;} .c-match .icon{background:#ede7fb;} .c-match h3{color:#7a5fc9;}
+.c-ceping .icon{background:#e0f2f7;} .c-ceping h3{color:#2a89a9;} .c-notice .icon{background:#e8f2fc;} .c-notice h3{color:#4a90d9;}
+.c-plan .icon{background:#e3f4f0;} .c-plan h3{color:#14806e;} .c-cat .icon{background:#fdf0f5;} .c-cat h3{color:#d9566f;}
+
+/* ===== 迷你邮宝（可拖动） ===== */
+.youbao-mini { position:absolute; right:14px; bottom:46px; z-index:5; width:88px; cursor:grab; text-align:center; transition:transform .3s cubic-bezier(.34,1.56,.64,1); user-select:none; -webkit-user-drag:none; }
+.youbao-mini.dragging { cursor:grabbing; transition:none; opacity:.85; z-index:50; }
+.youbao-mini .youbao { width:100%; } .youbao-mini:hover { transform:scale(1.12); }
+.mini-tip { margin-top:4px; font-size:11px; color:#90a8c4; background:rgba(255,255,255,.85); border-radius:10px; padding:2px 8px; display:inline-block; }
+.youbao-expanded { position:absolute; z-index:6; width:220px; display:none; text-align:center; animation:popIn .35s cubic-bezier(.34,1.56,.64,1); }
+@keyframes popIn { 0%{transform:scale(.4);opacity:0;} 100%{transform:scale(1);opacity:1;} }
+.youbao-expanded .youbao { width:100%; } .youbao-expanded.show { display:block; }
+.expand-tip { margin-top:8px; background:var(--card); color:var(--brand); border:1px solid #d6e6f5; padding:6px 14px; border-radius:18px; font-size:12px; display:inline-block; box-shadow:0 4px 14px rgba(74,144,217,.18); }
+.expand-tip b { color:#e8930a; }
+
+/* ===== 天气组件 ===== */
+.weather { position:fixed; right:20px; bottom:20px; z-index:8; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:10px 14px; display:flex; align-items:center; gap:8px; box-shadow:0 4px 14px rgba(74,144,217,.1); cursor:pointer; } .weather:hover { border-color:var(--brand); } .weather.live::after{content:'●';color:#10b981;font-size:8px;position:absolute;top:6px;right:8px;animation:wPulse 2s infinite;} @keyframes wPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.weather.offline::after { content:'离线'; font-size:10px; color:#e67e22; margin-left:6px; }
+@media (max-width:760px){ .demo-bar{flex-wrap:wrap;font-size:11px;} .weather{bottom:46px!important;} }
+.weather .w-icon { font-size:24px; } .weather .w-text { font-size:12px; color:var(--text-sub); line-height:1.4; }
+.weather .w-text b { font-size:15px; color:var(--text); } .weather .w-city { font-size:11px; color:#9ab; }
+
+/* ===== 邮宝形象 & 闪电 ===== */
+.youbao { position:relative; display:inline-block; }
+.youbao img { width:100%; display:block; -webkit-user-drag:none; user-select:none; }
+/* 双手舞动动画：思考时邮宝身体左右摇擡 */
+.youbao.thinking img { animation:bodyGlow 1.6s infinite, handWave 1.2s ease-in-out infinite; }
+@keyframes handWave { 0%,100%{transform:rotate(-3deg) translateY(0);} 25%{transform:rotate(3deg) translateY(-2px);} 50%{transform:rotate(-3deg) translateY(0);} 75%{transform:rotate(3deg) translateY(-2px);} }
+.bolt-halo { position:absolute; left:var(--halo-x); top:var(--halo-y); width:38%; height:30%; transform:translate(-50%,-50%); background:radial-gradient(ellipse at center,rgba(255,216,74,.9) 0%,rgba(255,200,40,.35) 45%,rgba(255,200,40,0) 72%); mix-blend-mode:screen; border-radius:50%; opacity:0; pointer-events:none; filter:blur(2px); }
+.bolt-svg { position:absolute; transform:translate(-50%,-50%); opacity:0; pointer-events:none; filter:drop-shadow(0 0 6px rgba(255,200,40,.9)); }
+.bolt-svg.b1 { left:var(--bolt1-x); top:var(--bolt1-y); width:var(--bolt1-w); } .bolt-svg.b2 { left:var(--bolt2-x); top:var(--bolt2-y); width:var(--bolt2-w); }
+.youbao:not(.thinking) .bolt-halo { opacity:.12; } .youbao:not(.thinking) .bolt-svg { opacity:.25; }
+.youbao.thinking .bolt-halo { animation:haloFlicker 1.6s infinite; }
+.youbao.thinking .bolt-svg.b1 { animation:boltFlicker 1.6s infinite; }
+.youbao.thinking .bolt-svg.b2 { animation:boltFlicker 1.6s .35s infinite; }
+@keyframes boltFlicker { 0%,100%{opacity:.18;filter:drop-shadow(0 0 3px rgba(255,200,40,.5));} 6%{opacity:1;filter:drop-shadow(0 0 14px #ffd94a) drop-shadow(0 0 30px #ffb300);} 10%{opacity:.3;} 16%{opacity:.95;filter:drop-shadow(0 0 16px #ffe14a) drop-shadow(0 0 34px #ffc200);} 22%{opacity:.22;} 48%{opacity:.85;filter:drop-shadow(0 0 12px #ffd94a);} 54%{opacity:.25;} 78%{opacity:.7;filter:drop-shadow(0 0 10px #ffd94a);} 84%{opacity:.3;} }
+@keyframes haloFlicker { 0%,100%{opacity:.1;transform:translate(-50%,-50%) scale(.85);} 6%{opacity:.95;transform:translate(-50%,-50%) scale(1.12);} 10%{opacity:.3;} 16%{opacity:.9;transform:translate(-50%,-50%) scale(1.18);} 22%{opacity:.25;} 48%{opacity:.75;transform:translate(-50%,-50%) scale(1.05);} 54%{opacity:.3;} 78%{opacity:.6;} 84%{opacity:.25;} }
+@keyframes bodyGlow { 0%,100%{filter:brightness(1);} 6%,16%{filter:brightness(1.06);} 48%{filter:brightness(1.03);} }
+.youbao.bounce img { animation:bounceOnce .5s ease; }
+@keyframes bounceOnce { 0%{transform:scale(1);} 35%{transform:scale(1.07) rotate(-2deg);} 70%{transform:scale(.98);} 100%{transform:scale(1);} }
+.hair-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9; }
+
+/* ===== 板块页 ===== */
+#boardView { display:none; flex-direction:column; flex:1; min-height:0; }
+.board-head { padding:16px 24px; display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--border); background:#fbfdff; }
+.back-btn { border:none; background:var(--card); color:var(--text-sub); width:34px; height:34px; border-radius:10px; font-size:16px; cursor:pointer; box-shadow:0 2px 8px rgba(74,144,217,.1); }
+.back-btn:hover { background:var(--brand-light); color:var(--brand); }
+.board-head h2 { font-size:17px; color:var(--text); flex:1; display:flex; align-items:center; gap:8px; }
+.board-action { border:none; background:var(--brand); color:#fff; border-radius:10px; padding:9px 18px; font-size:13px; cursor:pointer; font-weight:600; } .board-action:hover{background:#3a7ec4;} .board-action.alt{background:var(--brand-light);color:var(--brand);border:1px solid #cfe2f3;}
+.board-body { flex:1; overflow-y:auto; padding:20px 24px; }
+.post { border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:14px; background:var(--card); cursor:pointer; transition:all .2s; } .post:hover{box-shadow:0 8px 20px rgba(74,144,217,.1);}
+.post-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.ptag { font-size:11px; padding:2px 9px; border-radius:6px; font-weight:600; } .ptag.ask{background:#fff3e0;color:#e8862a;} .ptag.share{background:var(--brand-light);color:var(--brand);} .ptag.talk{background:#f0edfb;color:#7a5fc9;} .ptag.notice{background:#e9f7ef;color:#3a9d6a;} .ptag.solved{background:#e9f7ef;color:#2a8d5a;} .ptag.waiting{background:#fde9ec;color:#d9566f;}
+.prole { font-size:11px; padding:1px 8px; border-radius:8px; } .prole.stu{background:var(--brand-light);color:#5b8fc9;} .prole.tch{background:#fdeec9;color:#b8860b;} .prole.staff{background:#e9f7ef;color:#3a9d6a;}
+.pview { font-size:11px; color:#9ab; margin-left:auto; }
+.post h4 { font-size:14.5px; color:var(--text); margin-bottom:6px; line-height:1.5; } .post h4:hover{color:var(--brand);}
+.post-meta { display:flex; align-items:center; gap:12px; font-size:12px; color:#8aa; } .post-meta .pr{cursor:pointer;} .post-meta .pr:hover{color:var(--brand);} .post-meta .pl{cursor:pointer;} .post-meta .pl:hover{color:#e07070;} .post-meta .pl.liked{color:#e63c3c;font-weight:700;} .post-meta .pl.liked::before{content:'❤';margin-right:2px;} .post-meta .pl:not(.liked)::before{content:'🤍';margin-right:2px;}
+.answer-box { margin-top:10px; background:#f7fafd; border-left:3px solid #6db56d; border-radius:0 10px 10px 0; padding:10px 14px; font-size:12.5px; color:var(--text-sub); line-height:1.7; }
+.answer-box .who { color:#2a8d5a; font-weight:700; margin-right:6px; }
+.answer-box .teacher-mark { font-size:11px; background:#fdeec9; color:#b8860b; padding:1px 7px; border-radius:6px; margin-left:6px; }
+.reply-btn { margin-top:8px; border:1px solid #f0d9a8; background:#fffaf0; color:#b8860b; border-radius:8px; padding:6px 14px; font-size:12px; cursor:pointer; font-weight:600; } .reply-btn:hover{background:#fdf3d8;}
+.info-cards { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:18px; }
+.icard { border:1px solid var(--border); border-radius:14px; padding:18px; background:linear-gradient(180deg,var(--card),#f8fbfe); } .icard:hover{box-shadow:0 8px 20px rgba(74,144,217,.1);}
+.icard .ic-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; } .icard .ic-head .lv{font-size:13px;font-weight:700;} .icard .ic-head .money{margin-left:auto;font-size:20px;font-weight:800;color:var(--brand);} .icard .ic-head .money small{font-size:11px;font-weight:400;color:#8aa;}
+.icard ul{list-style:none;} .icard li{font-size:12.5px;color:var(--text-sub);line-height:1.9;padding-left:14px;position:relative;} .icard li::before{content:'·';position:absolute;left:2px;color:var(--brand);font-weight:700;}
+.icard.hl{border-color:#f3c646;background:linear-gradient(180deg,#fffdf5,#fdf7e0);} .icard.hl .ic-head .money{color:#d9a010;}
+.formula-bar { background:linear-gradient(135deg,var(--brand-light),#e0eefa); border:1px solid #cfe2f3; border-radius:14px; padding:16px 20px; margin-bottom:18px; font-size:13.5px; color:var(--text); line-height:1.8; } .formula-bar b{color:var(--brand);} .formula-bar .f{font-family:"Courier New",monospace;background:var(--card);padding:8px 14px;border-radius:8px;display:block;margin-top:8px;font-size:13px;color:var(--text-sub);box-shadow:inset 0 1px 4px rgba(74,144,217,.08);}
+.qa-list { border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.qa-item { padding:14px 18px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:background .2s; border-bottom:1px solid #f0f5fa; } .qa-item:last-child{border-bottom:none;} .qa-item:hover{background:#f4f9fe;}
+.qa-item .q{flex:1;font-size:13.5px;color:var(--text);} .qa-item .q:hover{color:var(--brand);} .qa-item .arr{color:#b8cfe6;font-size:12px;}
+.race-row { display:flex; align-items:center; gap:14px; border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:12px; background:var(--card); } .race-row:hover{box-shadow:0 6px 16px rgba(74,144,217,.1);}
+.race-level { font-size:11px; padding:3px 10px; border-radius:6px; font-weight:700; white-space:nowrap; } .race-level.nat{background:#fde9ec;color:#d9566f;} .race-level.prov{background:#fff3e0;color:#e8862a;} .race-level.sch{background:var(--brand-light);color:var(--brand);}
+.race-name { flex:1; font-size:13.5px; color:var(--text); font-weight:600; } .race-name small{display:block;font-weight:400;color:#8aa;font-size:11.5px;margin-top:2px;}
+.race-status { font-size:12px; font-weight:700; white-space:nowrap; } .race-status.open{color:#2a8d5a;} .race-status.run{color:#e8930a;} .race-status.pre{color:#9ab;}
+.race-join { border:none; background:var(--brand-light); color:var(--brand); border-radius:8px; padding:6px 13px; font-size:12px; cursor:pointer; font-weight:600; } .race-join:hover{background:var(--brand);color:#fff;}
+.notice-row { display:flex; align-items:center; gap:14px; padding:14px 6px; border-bottom:1px dashed var(--border); cursor:pointer; } .notice-row:hover{background:#f8fbff;}
+.notice-date { text-align:center; flex-shrink:0; } .notice-date .d{font-size:18px;font-weight:800;color:var(--text-sub);} .notice-date .m{font-size:10.5px;color:#9ab;}
+.notice-title { flex:1; font-size:13.5px; color:var(--text); line-height:1.5; } .notice-title:hover{color:var(--brand);} .notice-from{font-size:11.5px;color:#8aa;white-space:nowrap;}
+.ask-youbao-bar { margin-top:18px; background:linear-gradient(135deg,var(--brand),#6aa8e0); border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px; color:#fff; cursor:pointer; } .ask-youbao-bar:hover{transform:translateY(-2px);}
+.ask-youbao-bar .yb-mini-img { width:44px; flex-shrink:0; } .ask-youbao-bar .t{flex:1;font-size:13.5px;font-weight:600;} .ask-youbao-bar .t small{display:block;font-weight:400;opacity:.85;font-size:11.5px;margin-top:3px;} .ask-youbao-bar .go2{font-size:20px;}
+.empty-tip { padding:30px 14px; text-align:center; font-size:12px; color:#9ab; line-height:1.8; }
+
+/* ===== 规划板块（.food-tabs/.ftab/.food-chips/.fchip 为通用分段样式，与帮助/选课板块共用） ===== */
+.food-tabs { display:flex; gap:8px; margin-bottom:14px; }
+.food-chips { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+.fchip { font-size:12px; padding:5px 13px; border-radius:14px; background:var(--card); border:1px solid var(--border); color:#789; cursor:pointer; }
+.fchip.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+.ftab { flex:1; text-align:center; font-size:13px; padding:8px 0; border-radius:10px; cursor:pointer; color:#789; background:var(--card); border:1px solid var(--border); } .ftab.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+.plan-card { border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:12px; background:var(--card); transition:all .2s; } .plan-card:hover{box-shadow:0 8px 20px rgba(74,144,217,.1);}
+.plan-head { display:flex; align-items:center; gap:12px; }
+.plan-emoji { font-size:26px; width:46px; height:46px; display:flex; align-items:center; justify-content:center; background:#e3f4f0; border-radius:12px; flex-shrink:0; }
+.plan-name { font-size:14.5px; font-weight:600; color:var(--text); }
+.plan-mode { font-size:11.5px; color:#14806e; font-weight:600; margin-top:2px; }
+.plan-majors { font-size:12.5px; color:var(--text-sub); line-height:1.6; margin-top:8px; }
+.plan-note { font-size:12px; color:#8aa; line-height:1.6; margin-top:6px; }
+.plan-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:9px; }
+.plan-tags span { font-size:11px; color:#14806e; background:#e3f4f0; border-radius:6px; padding:2px 9px; font-weight:600; }
+.plan-list { margin:8px 0 2px; padding-left:18px; }
+.plan-list li { font-size:12.5px; color:var(--text-sub); line-height:1.9; }
+.plan-tl { font-size:12.5px; color:var(--text-sub); line-height:1.8; margin-top:10px; }
+.plan-tip { background:#f7fafd; border-radius:8px; padding:8px 12px; font-size:12px; color:var(--text-sub); line-height:1.6; margin-top:9px; }
+.plan-stats { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.plan-stat { flex:1; min-width:130px; background:linear-gradient(135deg,var(--brand-light),#fff); border:1px solid var(--border); border-radius:12px; padding:10px 14px; }
+.plan-stat b { font-size:18px; color:var(--brand); display:block; }
+.plan-stat small { font-size:11px; color:#8aa; }
+.plan-official { margin-top:16px; border:1.5px solid #bcd8f0; background:#f2f8ff; border-radius:12px; padding:12px 16px; font-size:13px; }
+.plan-official a { color:var(--brand); font-weight:700; text-decoration:none; }
+.plan-official a:hover { text-decoration:underline; }
+.plan-official small { display:block; font-size:11px; color:#8aa; margin-top:3px; }
+.plan-disclaimer { font-size:11px; color:#9ab; line-height:1.8; margin-top:12px; padding:10px 13px; background:#f7fafd; border-radius:10px; }
+
+/* ===== 生活板块·美食推荐卡片（多方收集·仅供参考） ===== */
+.food-warn { border:1.5px solid #f3b8bd; background:#fffafa; }
+.food-warn-tag { display:inline-block; font-size:11px; color:#c94059; background:#fdeeee; border-radius:6px; padding:2px 9px; margin-bottom:8px; font-weight:700; }
+.rate-high { color:#1e8e4e; }
+.rate-mid { color:#e8862a; }
+.rate-low { color:#c94059; }
+.food-disclaimer { font-size:11px; color:#9ab; line-height:1.8; margin-top:14px; padding:10px 13px; background:#f7fafd; border-radius:10px; }
+.food-card { border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:12px; background:var(--card); transition:all .2s; } .food-card:hover{box-shadow:0 8px 20px rgba(74,144,217,.1);}
+.food-top { display:flex; align-items:flex-start; gap:12px; }
+.food-emoji { font-size:36px; flex-shrink:0; }
+.food-info { flex:1; }
+.food-name { font-size:14.5px; font-weight:600; color:var(--text); margin-bottom:3px; }
+.food-desc { font-size:12px; color:#8aa; line-height:1.5; }
+.food-meta { display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12px; color:#8aa; flex-wrap:wrap; }
+.food-loc { display:flex; align-items:center; gap:3px; }
+.food-rate { color:#f5a623; }
+.food-comment { margin-top:8px; background:#f7fafd; border-radius:8px; padding:8px 12px; font-size:12px; color:var(--text-sub); line-height:1.6; }
+.food-comment .who{color:var(--brand);font-weight:600;margin-right:4px;}
+/* ===== 猫咪板块 ===== */
+.cat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+.cat-card { border:1px solid var(--border); border-radius:14px; padding:16px; background:var(--card); transition:all .2s; overflow:hidden; } .cat-card:hover{box-shadow:0 8px 20px rgba(74,144,217,.12);}
+.cat-card.adopted { opacity:.6; }
+.cat-photo-wrap { margin:-16px -16px 12px; overflow:hidden; position:relative; background:linear-gradient(135deg,var(--brand-light),#dceaf7); }
+.cat-photo { width:100%; height:auto; display:block; transition:transform .3s; }
+.cat-card:hover .cat-photo { transform:scale(1.03); }
+.cat-photo-fallback { display:flex; align-items:center; justify-content:center; font-size:58px; height:100%; }
+.cat-photo-tag { position:absolute; right:8px; bottom:8px; background:rgba(0,0,0,.45); color:#fff; font-size:10px; padding:2px 8px; border-radius:8px; backdrop-filter:blur(2px); }
+.cat-head { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.cat-avatar { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0; }
+.cat-name { font-size:15px; font-weight:700; color:var(--text); }
+.cat-breed { font-size:12px; color:#8aa; margin-top:2px; }
+.cat-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.cat-tag { font-size:11px; padding:3px 9px; border-radius:6px; font-weight:600; }
+.cat-tag.tnr{background:#e9f7ef;color:#2a8d5a;} .cat-tag.notnr{background:#fde9ec;color:#d9566f;} .cat-tag.sterile{background:#e8f2fc;color:var(--brand);}
+.cat-tag.adopted-tag{background:#f0f0f0;color:#999;}
+.cat-info-row { font-size:12.5px; color:var(--text-sub); line-height:1.7; padding-left:16px; position:relative; }
+.cat-info-row::before { content:'·'; position:absolute; left:2px; color:var(--brand); font-weight:700; }
+.cat-like { margin-top:8px; font-size:13px; color:#e07070; cursor:pointer; user-select:none; } .cat-like:hover{transform:scale(1.1);} .cat-like.liked{color:#e63c3c;font-weight:700;} .cat-like.liked::before{content:'❤';margin-right:3px;} .cat-like:not(.liked)::before{content:'🤍';margin-right:3px;}
+
+/* ===== 对话视图 ===== */
+#chatView { display:none; flex:1; min-height:0; overflow:hidden; }
+.chat-wrap { display:flex; width:100%; height:100%; }
+.history { width:250px; background:#f7fafd; border-right:1px solid var(--border); display:flex; flex-direction:column; }
+.history-head { padding:16px 14px; display:flex; align-items:center; gap:10px; }
+.hamburger { width:34px; height:34px; border:none; background:var(--card); border-radius:10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; box-shadow:0 2px 8px rgba(74,144,217,.12); } .hamburger:hover{background:var(--brand-light);} .hamburger span{display:block;width:16px;height:2px;background:var(--text-sub);border-radius:2px;}
+.history-head b{font-size:14px;color:var(--text);}
+.history-tabs { display:flex; gap:8px; padding:0 14px 10px; }
+.htab { flex:1; text-align:center; font-size:12px; padding:6px 0; border-radius:8px; cursor:pointer; color:#789; background:var(--card); border:1px solid var(--border); } .htab.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+.history-list { flex:1; overflow-y:auto; padding:4px 10px 10px; }
+.hgroup { font-size:11px; color:#9ab; padding:10px 6px 6px; } .hitem { padding:10px 12px; border-radius:10px; cursor:pointer; margin-bottom:4px; display:flex; align-items:center; gap:8px; } .hitem:hover{background:#eaf3fb;} .hitem.on{background:var(--brand-light);} .hitem .t{flex:1;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .hitem .pin{font-size:12px;} .hitem .star{font-size:12px;opacity:.35;cursor:pointer;} .hitem .star.on{opacity:1;} .hitem.hidden,.hgroup.hidden{display:none;}
+.chat { flex:1; display:flex; flex-direction:column; background:var(--card); }
+.chat-head { padding:14px 22px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #eef4fa; }
+.chat-head .avatar-sm { width:40px; height:40px; position:relative; } .chat-head .avatar-sm .youbao{width:100%;}
+.chat-head .name { font-size:15px; font-weight:600; color:var(--text); }
+.chat-head .status { font-size:12px; color:#7bb97a; } .chat-head .status.thinking-status{color:#e8a02a;}
+.chat-head .mood-tag { font-size:11px; color:var(--brand); background:var(--brand-light); padding:2px 8px; border-radius:8px; margin-left:8px; }
+.messages { flex:1; overflow-y:auto; padding:20px 22px; display:flex; flex-direction:column; gap:16px; background:#fbfdff; }
+.msg { display:flex; gap:10px; max-width:82%; } .msg.user{align-self:flex-end;flex-direction:row-reverse;}
+.msg .ava { width:34px; height:34px; border-radius:50%; background:var(--brand-light); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--brand); flex-shrink:0; } .msg .ava.yb{background:var(--card);border:1px solid #e3edf7;position:relative;overflow:visible;} .msg .ava.yb .youbao{width:100%;}
+.bubble { padding:10px 14px; border-radius:14px; font-size:13.5px; line-height:1.7; color:var(--text); background:var(--card); border:1px solid var(--border); box-shadow:0 2px 8px rgba(74,144,217,.06); } .msg.user .bubble{background:var(--brand);color:#fff;border-color:var(--brand);border-radius:14px 14px 4px 14px;} .msg.yb .bubble{border-radius:14px 14px 14px 4px;} .bubble b{color:var(--brand);} .bubble .small{font-size:11.5px;color:#8aa;margin-top:6px;}
+.bubble pre { white-space:pre-wrap; font-family:inherit; font-size:12.5px; margin-top:8px; color:var(--text); line-height:1.8; }
+.thinking-ind { display:flex; align-items:center; gap:8px; color:#b8963f; font-size:13px; } .dots{display:inline-flex;gap:4px;} .dots i{width:6px;height:6px;border-radius:50%;background:#e8b93a;animation:dotJump 1.2s infinite;} .dots i:nth-child(2){animation-delay:.18s;} .dots i:nth-child(3){animation-delay:.36s;} @keyframes dotJump{0%,60%,100%{transform:translateY(0);opacity:.5;}30%{transform:translateY(-5px);opacity:1;}}
+.input-bar { padding:14px 18px; border-top:1px solid #eef4fa; display:flex; gap:10px; background:var(--card); } .input-bar input{flex:1;border:1px solid #dce9f5;border-radius:12px;padding:11px 16px;font-size:13.5px;outline:none;color:var(--text);} .input-bar input:focus{border-color:var(--brand);} .input-bar button{border:none;background:var(--brand);color:#fff;border-radius:12px;padding:0 22px;font-size:14px;cursor:pointer;} .input-bar button:hover{background:#3a7ec4;}
+
+/* ===== 形象工坊 ===== */
+.customize-mask,.post-mask { position:fixed; inset:0; background:rgba(30,50,80,.45); z-index:90; display:none; align-items:center; justify-content:center; backdrop-filter:blur(2px); } .customize-mask.show,.post-mask.show{display:flex;}
+.customize-panel { width:900px; max-width:94vw; max-height:90vh; overflow-y:auto; background:var(--card); border-radius:20px; padding:26px 30px; box-shadow:0 24px 60px rgba(30,60,100,.35); }
+.cp-head { display:flex; align-items:center; margin-bottom:6px; } .cp-head h2{font-size:18px;color:var(--text);flex:1;} .cp-close{border:none;background:#f0f5fa;width:32px;height:32px;border-radius:50%;font-size:16px;color:#678;cursor:pointer;} .cp-close:hover{background:#e0eaf4;color:var(--text);}
+.cp-sub { font-size:12px; color:#8aa; margin-bottom:20px; }
+.cp-body { display:flex; gap:26px; } .cp-left { width:330px; flex-shrink:0; }
+.stage { background:linear-gradient(160deg,#f2f8ff,#e2eefa); border-radius:16px; height:400px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; } .stage .youbao{width:240px;} .stage .youbao.thinking{animation:stagePulse 1.6s infinite;} @keyframes stagePulse{0%,100%{transform:scale(1);}8%{transform:scale(1.02);}}
+.stage-floor { position:absolute; bottom:0; left:0; right:0; height:70px; background:radial-gradient(ellipse at 50% 0%,rgba(74,144,217,.18),transparent 70%); }
+.stage-tag { position:absolute; top:14px; left:16px; font-size:11px; color:#90a8c4; background:rgba(255,255,255,.7); padding:4px 10px; border-radius:8px; }
+.cp-right { flex:1; }
+.ctrl-group { margin-bottom:14px; } .ctrl-group .lab{font-size:13px;color:var(--text-sub);font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:6px;} .ctrl-group .lab .cur{font-weight:400;font-size:11px;color:#9ab;}
+.swatches { display:flex; flex-wrap:wrap; gap:9px; } .swatch{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid var(--card);box-shadow:0 2px 8px rgba(50,80,120,.2);transition:all .18s;} .swatch:hover{transform:scale(1.12);} .swatch.on{border-color:var(--brand);transform:scale(1.15);box-shadow:0 0 0 3px var(--brand-light),0 2px 10px rgba(74,144,217,.35);} .swatch.locked::after{content:'🔒';position:absolute;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.btnrow { display:flex; flex-wrap:wrap; gap:8px; } .cbtn{border:1px solid #d6e6f5;background:var(--card);color:var(--text-sub);border-radius:10px;padding:7px 13px;font-size:12.5px;cursor:pointer;} .cbtn:hover{border-color:var(--brand);color:var(--brand);} .cbtn.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+.ctrl-group.diy-lock { opacity:.42; pointer-events:none; }
+.ai-tip { font-size:11px; color:#7a94b0; background:#f0f6fd; border-radius:8px; padding:7px 10px; margin-top:8px; line-height:1.6; }
+.stage .youbao img.ai-mode { border-radius:14px; box-shadow:0 8px 22px rgba(74,144,217,.18); }
+.cp-actions { display:flex; gap:10px; margin-top:18px; } .cp-actions button{flex:1;border:none;border-radius:12px;padding:11px 0;font-size:14px;cursor:pointer;font-weight:600;} .btn-save{background:var(--brand);color:#fff;} .btn-save:hover{background:#3a7ec4;} .btn-share{background:var(--brand-light);color:var(--brand);border:1px solid #cfe2f3;} .btn-share:hover{background:#e0eefa;} .btn-draft{background:#f0f5fa;color:#678;border:1px solid #dce9f5;} .btn-draft:hover{background:#e0eaf4;}
+.cp-divider { height:1px; background:#eef4fa; margin:20px 0 16px; }
+.draft-bar { display:flex; align-items:center; gap:10px; margin-bottom:14px; } .draft-bar h3{font-size:14px;color:var(--text);} .draft-bar .hint{font-size:11px;color:#9ab;}
+.draft-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+.draft-card { border:1px solid var(--border); border-radius:10px; padding:8px 6px; text-align:center; cursor:pointer; transition:all .2s; position:relative; } .draft-card:hover{box-shadow:0 6px 14px rgba(74,144,217,.12);} .draft-card .dc-stage{height:70px;display:flex;align-items:center;justify-content:center;} .draft-card .dc-stage .youbao{width:50px;} .draft-card .dc-name{font-size:10px;color:var(--text-sub);margin-top:4px;} .draft-card .dc-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#e00;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .2s;} .draft-card:hover .dc-del{opacity:1;} .draft-empty{text-align:center;padding:20px;font-size:12px;color:#9ab;}
+.wall-head { display:flex; align-items:baseline; gap:10px; margin-bottom:14px; } .wall-head h3{font-size:15px;color:var(--text);} .wall-head .hint{font-size:11.5px;color:#9ab;}
+.wall { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.wall-card { border:1px solid var(--border); border-radius:14px; padding:14px 12px 12px; text-align:center; position:relative; transition:all .2s; } .wall-card:hover{box-shadow:0 8px 20px rgba(74,144,217,.12);transform:translateY(-3px);} .wall-card.top1{border-color:#f3c646;background:linear-gradient(180deg,#fffdf3,#fdf6de);} .wall-card .rank{position:absolute;top:-8px;left:-6px;font-size:11px;background:#f5c445;color:#6b5310;padding:3px 9px;border-radius:10px;font-weight:700;} .wall-card .mini-stage{height:110px;display:flex;align-items:center;justify-content:center;} .wall-card .mini-stage .youbao{width:78px;} .wall-card .wname{font-size:12.5px;color:var(--text);margin-top:8px;font-weight:600;} .wall-card .wauthor{font-size:11px;color:#9ab;margin-top:2px;} .wall-card .wlikes{margin-top:9px;font-size:12px;color:#e07070;cursor:pointer;user-select:none;} .wall-card .wlikes:hover{transform:scale(1.1);} .wall-card .wlikes.liked{color:#e63c3c;font-weight:700;} .wall-card .wlikes.liked::before{content:'❤';margin-right:3px;} .wall-card .wlikes:not(.liked)::before{content:'🤍';margin-right:3px;}
+@keyframes poseWiggle{0%,100%{transform:rotate(-4deg);}50%{transform:rotate(4deg);}} @keyframes poseFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+
+/* 右键菜单/身份菜单/主题菜单 */
+.ctx-menu { position:fixed; z-index:95; background:var(--card); border-radius:12px; padding:6px; box-shadow:0 10px 30px rgba(30,60,100,.25); display:none; min-width:170px; border:1px solid #eef4fa; } .ctx-menu.show{display:block;} .ctx-item{padding:10px 14px;font-size:13px;color:var(--text-sub);border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;} .ctx-item:hover{background:var(--brand-light);color:var(--brand);} .ctx-item.on{color:var(--brand);font-weight:700;}
+.post-panel { width:480px; max-width:92vw; background:var(--card); border-radius:18px; padding:24px 26px; box-shadow:0 24px 60px rgba(30,60,100,.35); } .post-panel h3{font-size:16px;color:var(--text);margin-bottom:4px;} .post-panel .ps{font-size:12px;color:#8aa;margin-bottom:16px;} .post-panel select,.post-panel input,.post-panel textarea{width:100%;border:1px solid #dce9f5;border-radius:10px;padding:10px 13px;font-size:13px;color:var(--text);outline:none;margin-bottom:12px;font-family:inherit;resize:vertical;} .post-panel select:focus,.post-panel input:focus,.post-panel textarea:focus{border-color:var(--brand);} .post-actions2{display:flex;gap:10px;margin-top:6px;} .post-actions2 button{flex:1;border:none;border-radius:10px;padding:11px 0;font-size:13.5px;cursor:pointer;font-weight:600;} .btn-cancel2{background:#f0f5fa;color:#678;} .btn-cancel2:hover{background:#e0eaf4;} .btn-publish{background:var(--brand);color:#fff;} .btn-publish:hover{background:#3a7ec4;}
+
+/* 演示控制条 */
+.demo-bar { margin-top:14px; background:var(--card); border-radius:14px; padding:10px 20px; display:flex; align-items:center; gap:10px; box-shadow:0 8px 24px rgba(50,90,140,.12); flex-wrap:wrap; justify-content:center; } .demo-bar .lab{font-size:12px;color:#8aa;} .demo-bar button{border:1px solid #d6e6f5;background:var(--card);color:var(--text-sub);border-radius:10px;padding:7px 14px;font-size:13px;cursor:pointer;} .demo-bar button:hover{background:var(--brand-light);color:var(--brand);}
+
+/* ===== 身份认证 ===== */
+.id-badge.unverified { border-color:#f0c36d; background:linear-gradient(135deg,#fffdf4,#fff8e0); animation:badgePulse 2.6s ease-in-out infinite; }
+@keyframes badgePulse { 0%,100%{box-shadow:0 3px 10px rgba(240,195,109,.25)} 50%{box-shadow:0 3px 16px rgba(240,195,109,.55)} }
+.id-badge.pending { border-color:#a8c8f0; }
+.id-badge.unverified .role em { color:#d99a1f; }
+.auth-panel input { border:1px solid var(--border); border-radius:10px; padding:9px 12px; font-size:14px; outline:none; margin-bottom:6px; width:100%; box-sizing:border-box; background:var(--card); color:var(--text); }
+.auth-panel input:focus { border-color:var(--brand); }
+.code-hint { font-size:11px; color:#8aa; line-height:1.8; background:var(--brand-light); border-radius:8px; padding:8px 11px; margin:2px 0 10px; }
+.code-hint b { color:var(--brand); }
+.auth-label { font-size:12px; color:var(--text-sub); font-weight:600; margin:10px 0 6px; display:block; }
+.staff-types { display:flex; gap:8px; margin-bottom:8px; }
+.staff-types button { flex:1; border:1px solid var(--border); background:var(--card); border-radius:10px; padding:9px 0; font-size:13px; cursor:pointer; color:#789; }
+.staff-types button.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+.proof-upload { border:1.5px dashed #b8d4f0; border-radius:10px; padding:16px; text-align:center; font-size:13px; color:#89a; cursor:pointer; margin-bottom:6px; transition:.2s; }
+.proof-upload:hover { border-color:var(--brand); color:var(--brand); background:var(--brand-light); }
+.proof-upload.done { border:1.5px solid var(--brand); color:var(--brand); background:var(--brand-light); }
+.role-info { padding:4px; }
+.role-info .ri-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:8px 6px; border-bottom:1px dashed var(--border); color:#8aa; }
+.role-info .ri-row b { color:var(--text); font-size:13.5px; }
+.auth-out { width:100%; border:none; background:#fdeeee; color:#d9566f; border-radius:10px; padding:9px 0; font-size:13px; cursor:pointer; margin-top:10px; font-weight:600; }
+.auth-out:hover { background:#fbdada; }
+.auth-go { width:100%; border:none; background:var(--brand); color:#fff; border-radius:10px; padding:9px 0; font-size:13px; cursor:pointer; margin-top:10px; font-weight:600; }
+.auth-go:hover { filter:brightness(1.08); }
+
+/* ===== 选课建议 ===== */
+.course-search { margin-bottom:12px; }
+.course-search input { width:100%; border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:13px; outline:none; background:var(--card); color:var(--text); box-sizing:border-box; }
+.course-search input:focus { border-color:var(--brand); }
+.course-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; transition:.15s; }
+.course-card:hover { box-shadow:0 6px 18px rgba(74,144,217,.10); }
+.course-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.course-name { font-size:14px; font-weight:700; color:var(--text); }
+.course-credit { font-size:11px; color:var(--brand); background:var(--brand-light); border-radius:6px; padding:2px 9px; white-space:nowrap; font-weight:600; }
+.course-meta { font-size:12px; color:#8aa; margin-top:4px; }
+.course-remark { font-size:12.5px; margin-top:9px; padding:8px 11px; border-radius:8px; line-height:1.7; }
+.remark-good { background:#e9f9ee; color:#1e8e4e; }
+.remark-bad { background:#fdeeee; color:#c94059; }
+.remark-neutral { background:var(--brand-light); color:var(--brand); }
+.course-note-label { font-size:11px; color:#9ab; margin-top:8px; font-weight:600; }
+.course-note { font-size:12px; color:#678; line-height:1.7; background:#f7fafd; border-radius:8px; padding:8px 11px; margin-top:4px; }
+.course-disclaimer { font-size:11px; color:#9ab; line-height:1.8; margin-top:14px; padding:10px 13px; background:#f7fafd; border-radius:10px; }
+
+/* ===== 猫咪板块 & 识图找猫 ===== */
+.cat-top-note { display:flex; align-items:center; justify-content:space-between; gap:10px; background:linear-gradient(135deg,#fff8e6,#fdf3e0); border:1px solid #f0d9a8; border-radius:12px; padding:10px 14px; font-size:13px; color:#9a6d1f; font-weight:600; margin-bottom:10px; flex-wrap:wrap; }
+.id-btn { border:none; background:var(--brand); color:#fff; border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600; white-space:nowrap; }
+.id-btn:hover { filter:brightness(1.08); }
+.id-upload { border:2px dashed #b8d4f0; border-radius:14px; padding:36px 20px; text-align:center; font-size:14px; color:#89a; cursor:pointer; background:#f7fbff; transition:.2s; }
+.id-upload small { display:block; margin-top:7px; color:#abc; font-size:11px; font-weight:400; }
+.id-upload:hover { border-color:var(--brand); background:#eaf4fd; color:var(--brand); }
+.id-thinking { display:flex; flex-direction:column; align-items:center; gap:12px; padding:32px 10px; font-size:14px; color:#567; }
+.id-thinking .youbao { width:64px; }
+.id-thinking small { font-size:11px; color:#9ab; }
+.id-fail { font-size:20px; text-align:center; padding:22px 0 8px; color:#d9566f; font-weight:700; }
+.id-fail-sub { font-size:12px; color:#8aa; text-align:center; line-height:1.9; margin-bottom:6px; padding:0 6px; }
+.id-ok { font-size:14px; text-align:center; padding:8px 0 4px; color:#1e8e4e; font-weight:700; }
+.id-cat-card { display:flex; gap:11px; align-items:center; background:#f7fbff; border:1px solid #dceaf7; border-radius:12px; padding:10px 12px; margin:8px 0; }
+.id-cat-card .cat-avatar { width:44px; height:44px; font-size:22px; flex-shrink:0; }
+.id-cat-photo { width:58px; height:58px; border-radius:10px; object-fit:cover; flex-shrink:0; border:1px solid #dceaf7; }
+.chat-upload-btn { border:1px solid var(--border); background:var(--card); border-radius:10px; padding:7px 11px; font-size:18px; cursor:pointer; flex-shrink:0; color:var(--brand); transition:.15s; }
+.chat-upload-btn:hover { background:var(--brand-light); }
+.chat-photo-msg { max-width:180px; border-radius:12px; border:2px solid var(--brand-light); }
+.chat-photo-result { margin-top:8px; padding:10px; background:var(--brand-light); border-radius:12px; }
+.chat-photo-result .id-cat-photo { width:80px; height:80px; }
+.chat-file-msg { display:inline-flex; align-items:center; gap:8px; background:#f0f6fd; border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:13px; color:var(--text); max-width:230px; overflow:hidden; white-space:nowrap; }
+.chat-file-msg small { color:#8aa; font-size:11px; flex-shrink:0; font-weight:400; }
+.id-others { font-size:12px; color:#678; background:#f7fafd; border-radius:10px; padding:10px 12px; margin-top:8px; line-height:1.8; }
+.id-note { font-size:11px; color:#9ab; text-align:center; margin-top:9px; line-height:1.7; padding:0 4px; }
+.id-retry { display:block; margin:14px auto 2px; border:1px solid var(--brand); background:#fff; color:var(--brand); border-radius:10px; padding:8px 24px; font-size:13px; cursor:pointer; }
+.id-retry:hover { background:#eaf4fd; }
+
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 顶部搜索栏 -->
+  <div class="top-search">
+    <button class="ts-back" onclick="goHome()" title="返回主页">🏠</button>
+    <div class="ts-input-wrap">
+      <span class="ts-icon">🔍</span>
+      <input class="ts-input" id="searchInput" placeholder="搜索评优、奖学金、综测、空教室、写通知…" onfocus="showSearchHistory()" oninput="filterSearch(this.value)" onkeydown="if(event.key==='Enter')doSearch(this.value)">
+      <div class="ts-dropdown" id="searchDropdown">
+        <div class="ts-clear" onclick="clearSearchHistory()">🗑 清除全部搜索记录</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view">
+    <!-- 首页 -->
+    <section id="homeView">
+      <div class="brand-row">
+        <div class="brand-logo">📮</div>
+        <div><div class="brand-title">小<em>邮宝</em> · AI校园管家</div><div class="brand-sub">重庆邮电大学 · 一站式校园服务</div></div>
+      </div>
+      <div class="id-badge unverified" id="idBadge" onclick="onBadgeClick(event)" title="统一身份认证">
+        <div class="avatar" id="roleAvatar">🔒</div>
+        <div class="role">身份：<em id="roleName">未认证</em></div>
+      </div>
+      <div class="hello">你好，<b id="helloName">同学</b>！我是邮宝，八大板块直达服务，或点右下角的我 �⚡</div>
+      <div class="grid">
+        <div class="card c-life" onclick="showBoard('life')"><div class="icon">🍜</div><h3>生活 <span class="go">›</span></h3><p>校园社区 · 美食参考 / 校车 / 生活互助</p></div>
+        <div class="card c-schol" onclick="showBoard('schol')"><div class="icon">🎓</div><h3>奖学金 <span class="go">›</span></h3><p>等级标准 / 申请条件 / 政策问答</p></div>
+        <div class="card c-help" onclick="showBoard('help')"><div class="icon">🙋</div><h3>帮助 <span class="go">›</span></h3><p>答疑社区 · 老师在线解答疑难</p></div>
+        <div class="card c-match" onclick="showBoard('match')"><div class="icon">🏆</div><h3>比赛 <span class="go">›</span></h3><p>竞赛日历 / 报名入口 / 大创项目</p></div>
+        <div class="card c-ceping" onclick="showBoard('ceping')"><div class="icon">📊</div><h3>综测 <span class="go">›</span></h3><p>测评公式 / 加分项 / 计算规则</p></div>
+        <div class="card c-notice" onclick="showBoard('notice')"><div class="icon">📢</div><h3>通知 <span class="go">›</span></h3><p>校园通知 / 公文写作 / 活动策划</p></div>
+        <div class="card c-plan" onclick="showBoard('plan')"><div class="icon">🗺️</div><h3>规划 <span class="go">›</span></h3><p>培养方案 / 四年规划 / 毕业去向</p></div>
+        <div class="card c-cat" onclick="showBoard('cat')"><div class="icon">🐱</div><h3>猫咪 <span class="go">›</span></h3><p>邮猫图鉴 / TNR记录 / 领养信息</p></div>
+      </div>
+      <!-- 迷你邮宝 -->
+      <div class="youbao-mini" id="youbaoMini" title="拖动我 · 单击变大 · 双击进入对话">
+        <div class="youbao"><img src="youbao.png" alt="邮宝"><div class="bolt-halo"></div><svg class="bolt-svg b1" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg><svg class="bolt-svg b2" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg></div>
+        <div class="mini-tip">点我 ⚡</div>
+      </div>
+      <div class="youbao-expanded" id="youbaoExpanded">
+        <div class="youbao thinking"><img src="youbao.png" alt="邮宝"><div class="bolt-halo"></div><svg class="bolt-svg b1" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg><svg class="bolt-svg b2" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg></div>
+        <div class="expand-tip"><b>双击</b>进入对话 · 单击收起</div>
+      </div>
+    </section>
+
+    <!-- 板块页 -->
+    <section id="boardView">
+      <div class="board-head"><button class="back-btn" onclick="backHomeFromBoard()">←</button><h2><span class="bicon" id="boardIcon"></span><span id="boardTitle"></span></h2><button class="board-action" id="boardAction" onclick="onBoardAction()"></button></div>
+      <div class="board-body" id="boardBody"></div>
+    </section>
+
+    <!-- 对话视图 -->
+    <section id="chatView">
+      <div class="chat-wrap">
+        <aside class="history">
+          <div class="history-head"><button class="hamburger" onclick="goHome()" title="返回八大板块"><span></span><span></span><span></span></button><b>历史对话</b></div>
+          <div class="history-tabs"><div class="htab on" data-tab="all" onclick="switchTab('all',this)">全部</div><div class="htab" data-tab="pinned" onclick="switchTab('pinned',this)">📌 置顶</div><div class="htab" data-tab="starred" onclick="switchTab('starred',this)">⭐ 收藏夹</div></div>
+          <div class="history-list" id="historyList">
+            <div class="hgroup">置顶</div>
+            <div class="hitem on" data-pinned="1" data-starred="1"><span class="pin">📌</span><span class="t">奖学金评定标准咨询</span><span class="star on" onclick="event.stopPropagation();toggleStar(this)">⭐</span></div>
+            <div class="hgroup">本周</div>
+            <div class="hitem" data-pinned="1" data-starred="1"><span class="pin">📌</span><span class="t">周三下午空教室查询</span><span class="star on" onclick="event.stopPropagation();toggleStar(this)">⭐</span></div>
+            <div class="hitem" data-pinned="0" data-starred="0"><span class="t">社团招新通知代写</span><span class="star" onclick="event.stopPropagation();toggleStar(this)">⭐</span></div>
+            <div class="hitem" data-pinned="0" data-starred="0"><span class="t">综测加分项有哪些？</span><span class="star" onclick="event.stopPropagation();toggleStar(this)">⭐</span></div>
+            <div class="hgroup">更早</div>
+            <div class="hitem" data-pinned="0" data-starred="0"><span class="t">优秀学生干部条件</span><span class="star" onclick="event.stopPropagation();toggleStar(this)">⭐</span></div>
+            <div class="hitem" data-pinned="0" data-starred="0"><span class="t">志愿者时长要求</span><span class="star" onclick="event.stopPropagation();toggleStar(this)">⭐</span></div>
+            <div class="empty-tip" id="emptyTip" style="display:none">空空如也～<br>点亮 ⭐ 即可收藏</div>
+          </div>
+        </aside>
+        <main class="chat">
+          <div class="chat-head">
+            <div class="avatar-sm"><div class="youbao" id="headYoubao"><img src="youbao.png" alt="邮宝"><div class="bolt-halo"></div><svg class="bolt-svg b1" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg><svg class="bolt-svg b2" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg></div></div>
+            <div><div class="name">小邮宝 <span class="mood-tag" id="moodTag">😊 开心</span></div><div class="status" id="statusText">在线 · 随时待命</div></div>
+          </div>
+          <div class="messages" id="messages">
+            <div class="msg user"><div class="ava">我</div><div class="bubble">评三好学生需要什么条件？</div></div>
+            <div class="msg yb"><div class="ava yb"><div class="youbao"><img src="youbao.png"><div class="bolt-halo"></div></div></div><div class="bubble">根据《本科生评优实施办法（修订）》<b>第四、五条</b>：<br>1. 基本条件：课程一次性通过；志愿服务 ≥ 20 小时；体测 ≥ 60 分<br>2. 核心条件：<b>综测成绩排名专业前 10%</b><br>3. 比例：不超过学院学生人数的 5%<div class="small">📄 依据：重邮〔2026〕95号 · 官方文件</div></div></div>
+            <div class="msg user"><div class="ava">我</div><div class="bubble">那周三下午有哪些空教室？我们社团要开会</div></div>
+            <div class="msg yb"><div class="ava yb"><div class="youbao"><img src="youbao.png"><div class="bolt-halo"></div></div></div><div class="bubble">周三下午（5-6节、7-8节）共 <b>17 间</b>空闲教室，推荐：<br>· <b>5401</b>（五教，150座，下午全空）— 适合社团大会<br>· <b>2203</b>（二教，60座，全天空闲）— 适合小型讨论<div class="small">⚡ 数据来源：教务系统模拟接口</div></div></div>
+          </div>
+          <div class="input-bar"><button class="chat-upload-btn" onclick="document.getElementById('chatFileInput').click()" title="上传图片/文件识别：图片找猫咪+图像分析 · txt/md/csv文本识别">📎</button><input type="text" id="chatInput" placeholder="问我评优、奖学金、规划、空教室、写通知… / 📎上传图片找猫咪、传文件识别" onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()">发送</button></div><input type="file" id="chatFileInput" accept="image/*,.txt,.md,.csv,.log,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="onChatFilePick(this)">
+        </main>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- 天气（全局浮动，所有页面都可见 · Open-Meteo实时数据，点击可刷新） -->
+<div class="weather" id="weatherWidget" onclick="refreshWeatherNow()" title="点击刷新实时天气">
+  <div class="w-icon" id="wIcon">📡</div>
+  <div class="w-text"><b id="wTemp">--°C</b> <span id="wDesc">获取中</span><div class="w-city" id="wCity">重庆·南岸 · 实时天气</div></div>
+</div>
+
+<div class="demo-bar"><span class="lab">演示控制：</span><button onclick="toggleView()" id="btnView">进入对话</button><span class="lab">| 右上角身份认证（7位统一验证码·自动识别） | 未认证仅可查看，认证后解锁发帖/形象设计 | 邮宝：拖动 · 单击变大 · 双击进对话 · 右键自定义</span></div>
+
+<!-- 右键菜单 -->
+<div class="ctx-menu" id="ctxMenu"><div class="ctx-item" onclick="openCustomize();hideCtx()">🎨 自定义我的邮宝</div><div class="ctx-item" onclick="openCustomize('wall');hideCtx()">🖼️ 查看形象墙</div><div class="ctx-item" onclick="openCustomize('draft');hideCtx()">📋 历史形象 & 草稿</div></div>
+<!-- 身份菜单（认证后显示信息卡） -->
+<div class="ctx-menu" id="roleMenu" style="min-width:230px"><div id="roleMenuBody"></div></div>
+<!-- 身份认证弹窗 -->
+<div class="post-mask" id="authMask"><div class="post-panel auth-panel">
+  <h3>🪪 统一身份认证</h3>
+  <div class="ps">填写统一身份验证码 + 姓名，系统按前2位号段自动识别身份</div>
+  <label class="auth-label">统一身份验证码（7位数字）</label>
+  <input id="authCode" maxlength="7" inputmode="numeric" placeholder="示例：0612345（本专科生）" oninput="onCodeInput(this.value)">
+  <div class="code-hint" id="codeHint">号段规则：01-05 教职工 · 06-30 本专科生 · 31-45 研究生<br>61-70 继续教育 · 71-80 其他人员 · 46-60 / 81-99 预留号段暂不支持</div>
+  <label class="auth-label">姓名</label>
+  <input id="authName" placeholder="请输入真实姓名">
+  <div id="staffSection" style="display:none">
+    <label class="auth-label">教职工身份类型</label>
+    <div class="staff-types"><button id="staffT1" class="on" onclick="pickStaffType(1)">👨‍🏫 任课教师</button><button id="staffT2" onclick="pickStaffType(2)">👮 非教师教职工</button></div>
+    <div id="proofSection" style="display:none">
+      <label class="auth-label">上传身份证明（工作证 / 聘书 / 校园卡照片）</label>
+      <div class="proof-upload" id="proofUpload" onclick="document.getElementById('proofFile').click()">📁 点击选择身份证明文件</div>
+      <input type="file" id="proofFile" accept="image/*,.pdf" style="display:none" onchange="onProofPick(this)">
+    </div>
+  </div>
+  <div class="post-actions2"><button class="btn-cancel2" onclick="closeAuth()">取消</button><button class="btn-publish" onclick="submitAuth()">提交认证</button></div>
+  <div style="margin-top:10px;display:flex;align-items:center;gap:6px;font-size:11px;color:#8aa"><input type="checkbox" id="rememberAuth" style="cursor:pointer"><label for="rememberAuth" style="cursor:pointer">记住登录状态（7天内免再次认证）</label></div>
+</div></div>
+<!-- 识图找猫弹窗 -->
+<div class="post-mask" id="photoMask"><div class="post-panel" style="width:430px">
+  <h3>📸 识图找猫</h3>
+  <div class="ps">上传猫咪照片，邮宝按毛色特征比对在册猫咪</div>
+  <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="onPhotoPick(this)">
+  <div id="idResult"></div>
+  <div class="post-actions2"><button class="btn-cancel2" onclick="closeIdentify()">关闭</button></div>
+</div></div>
+<!-- 发帖弹窗 -->
+<div class="post-mask" id="postMask"><div class="post-panel"><h3>✍️ 发布新帖</h3><div class="ps" id="postSub">发布到社区 · 身份：学生</div><select id="postTag"><option value="ask">求助</option><option value="share">分享</option><option value="talk">讨论</option></select><input type="text" id="postTitle" placeholder="一句话说清你的问题或分享"><textarea id="postContent" rows="3" placeholder="补充细节（选填）…"></textarea><div class="post-actions2"><button class="btn-cancel2" onclick="closePost()">取消</button><button class="btn-publish" onclick="publishPost()">发布</button></div></div></div>
+
+<!-- 形象工坊 -->
+<div class="customize-mask" id="customizeMask"><div class="customize-panel">
+  <div class="cp-head"><h2>邮宝形象工坊</h2><button class="cp-close" onclick="closeCustomize()">✕</button></div>
+  <div class="cp-sub">AI造型 · 真实换色 · 换发型 · 换性格 · 换情绪 · 存草稿 · 分享到形象墙 ⚡</div>
+  <div class="cp-body">
+    <div class="cp-left"><div class="stage"><div class="stage-tag">实时预览</div><div class="stage-floor"></div>
+      <div class="youbao thinking" id="customYoubao">
+        <img src="youbao.png" alt="邮宝" id="customImg">
+        <div class="bolt-halo"></div>
+        <svg class="bolt-svg b1" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg>
+        <svg class="bolt-svg b2" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg>
+        <div class="hair-layer" id="hairLayer"></div>
+      </div>
+    </div></div>
+    <div class="cp-right">
+      <div class="ctrl-group"><div class="lab">✨ AI造型 <span class="cur" id="curAI">原创经典</span></div>
+        <div class="btnrow" id="aiRow">
+          <button class="cbtn on" onclick="pickAI(this,'none')">原创经典</button>
+          <button class="cbtn" onclick="pickAI(this,'sport')">🏃 运动风</button>
+          <button class="cbtn" onclick="pickAI(this,'casual')">🧢 潮流风</button>
+          <button class="cbtn" onclick="pickAI(this,'denim')">🤠 牛仔风</button>
+          <button class="cbtn" onclick="pickAI(this,'lab')">🔬 科研风</button>
+          <button class="cbtn" onclick="pickAI(this,'tshirt')">👕 白T恤</button>
+          <button class="cbtn" onclick="pickAI(this,'gown')">🎓 学士服</button>
+          <button class="cbtn" onclick="pickAI(this,'scarf')">🧣 红围巾</button>
+          <button class="cbtn" onclick="pickAI(this,'postman')">📮 信使款</button>
+        </div>
+        <div class="ai-tip" id="aiTip" style="display:none">当前为 AI 整装造型（含专属动作），身体颜色 / 发型已锁定；点「原创经典」恢复自由 DIY</div>
+      </div>
+      <div class="ctrl-group"><div class="lab">🎨 主题色 <span class="cur" id="curTheme">经典蓝</span></div>
+        <div class="swatches" id="themeSwatches">
+          <div class="swatch on" style="background:#4a90d9" onclick="pickTheme(this,'#4a90d9','经典蓝','#e8f2fc','#eef4fb','#dce9f7')"></div>
+          <div class="swatch" style="background:#2d9d78" onclick="pickTheme(this,'#2d9d78','清新绿','#e4f7ee','#eafaf3','#d5f1e4')"></div>
+          <div class="swatch" style="background:#d96060" onclick="pickTheme(this,'#d96060','暖阳红','#fce8e8','#fcecec','#f9dada')"></div>
+          <div class="swatch" style="background:#9b6dd6" onclick="pickTheme(this,'#9b6dd6','星空紫','#f0e8fb','#f5eefc','#e4d5f7')"></div>
+          <div class="swatch" style="background:#f0a63c" onclick="pickTheme(this,'#f0a63c','活力橙','#fdf0e0','#fdf3e8','#fce5cc')"></div>
+          <div class="swatch" style="background:#38b8a8" onclick="pickTheme(this,'#38b8a8','薄荷青','#e0f7f5','#e8faf8','#ccf0ee')"></div>
+          <div class="swatch" style="background:#3a3f4a" onclick="pickTheme(this,'#3a3f4a','暗夜黑','#4a4f5a','#3a3f4a','#2a2f3a')"></div>
+        </div>
+      </div>
+      <div class="ctrl-group" data-diy="1"><div class="lab">🎨 身体颜色 <span class="cur" id="curColor">邮宝绿</span></div>
+        <div class="swatches" id="colorSwatches">
+          <div class="swatch on" style="background:#57b848" onclick="pickColor(this,'邮宝绿')"></div>
+          <div class="swatch" style="background:#4a90d9" onclick="pickColor(this,'重邮蓝')"></div>
+          <div class="swatch" style="background:#f0a63c" onclick="pickColor(this,'暖阳橙')"></div>
+          <div class="swatch" style="background:#e05a7a" onclick="pickColor(this,'樱花粉')"></div>
+          <div class="swatch" style="background:#9b6dd6" onclick="pickColor(this,'星空紫')"></div>
+          <div class="swatch" style="background:#38b8a8" onclick="pickColor(this,'薄荷青')"></div>
+        </div>
+      </div>
+      <div class="ctrl-group" data-diy="1"><div class="lab">💇 发型 <span class="cur" id="curHair">原始爆炸头</span></div>
+        <div class="btnrow" id="hairRow">
+          <button class="cbtn on" onclick="pickHair(this,'original')">💥 爆炸头</button>
+          <button class="cbtn" onclick="pickHair(this,'short')">✂️ 短发</button>
+          <button class="cbtn" onclick="pickHair(this,'bowl')">🍜 锅盖头</button>
+          <button class="cbtn" onclick="pickHair(this,'bald')">🧿 光头</button>
+        </div>
+      </div>
+      <div class="ctrl-group"><div class="lab">🎭 性格 <span class="cur" id="curChar">温柔体贴</span></div>
+        <div class="btnrow" id="charRow">
+          <button class="cbtn on" onclick="pickChar(this,'温柔体贴')">温柔体贴</button>
+          <button class="cbtn" onclick="pickChar(this,'严谨')">严谨</button>
+          <button class="cbtn" onclick="pickChar(this,'高冷毒舌')">高冷毒舌</button>
+          <button class="cbtn" onclick="pickChar(this,'幽默')">幽默</button>
+        </div>
+      </div>
+      <div class="ctrl-group"><div class="lab">😊 情绪 <span class="cur" id="curMood">开心</span></div>
+        <div class="btnrow" id="moodRow">
+          <button class="cbtn on" onclick="pickMood(this,'开心')">😊 开心</button>
+          <button class="cbtn" onclick="pickMood(this,'失落')">😔 失落</button>
+          <button class="cbtn" onclick="pickMood(this,'兴奋')">🤩 兴奋</button>
+          <button class="cbtn" onclick="pickMood(this,'淡定')">😐 淡定</button>
+        </div>
+      </div>
+      <div class="ctrl-group"><div class="lab">⚡ 姿态 <span class="cur" id="curPose">标准站姿</span></div>
+        <div class="btnrow" id="poseRow">
+          <button class="cbtn on" onclick="pickPose(this,'stand','标准站姿')">标准站姿</button>
+          <button class="cbtn" onclick="pickPose(this,'wiggle','摇摆待机')">🎵 摇摆</button>
+          <button class="cbtn" onclick="pickPose(this,'float','漂浮模式')">🎈 漂浮</button>
+        </div>
+      </div>
+      <div class="cp-actions">
+        <button class="btn-draft" onclick="saveDraft()">📋 存草稿</button>
+        <button class="btn-save" onclick="saveYoubao()">💾 保存形象</button>
+        <button class="btn-share" onclick="shareYoubao()">🚀 分享到形象墙</button>
+      </div>
+    </div>
+  </div>
+  <div class="cp-divider"></div>
+  <!-- 草稿 & 历史形象 -->
+  <div class="draft-bar"><h3>📋 历史形象 & 草稿</h3><span class="hint">已保存的形象和草稿，点击可恢复</span></div>
+  <div class="draft-grid" id="draftGrid"><div class="draft-empty">暂无草稿，点击「存草稿」保存当前形象</div></div>
+  <div class="cp-divider"></div>
+  <div class="wall-head"><h3>🖼️ 形象墙</h3><span class="hint">所有用户设计的邮宝形象 · 按人气排序</span></div>
+  <div class="wall" id="wallGrid">
+    <div class="wall-card top1"><div class="rank">人气 No.1</div><div class="mini-stage"><div class="youbao"><img src="youbao_blue.png"><div class="bolt-halo"></div></div></div><div class="wname">邮宝蓝</div><div class="wauthor">@邮宝官方</div><div class="wlikes liked" onclick="wallLike(this,128)">128</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_purple.png"><div class="bolt-halo"></div></div></div><div class="wname">电光紫</div><div class="wauthor">@通信·小王</div><div class="wlikes" onclick="wallLike(this,86)">86</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_orange.png"><div class="bolt-halo"></div></div></div><div class="wname">暖阳橙</div><div class="wauthor">@经管·小张</div><div class="wlikes" onclick="wallLike(this,64)">64</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_pink.png"><div class="bolt-halo"></div></div></div><div class="wname">樱花粉</div><div class="wauthor">@外语·小李</div><div class="wlikes" onclick="wallLike(this,52)">52</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_sport.jpg"></div></div><div class="wname">运动风 · 点赞</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,96)">96</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_casual.jpg"></div></div><div class="wname">潮流风 · 抱臂</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,88)">88</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_denim.jpg"></div></div><div class="wname">牛仔风 · 马甲</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,79)">79</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_lab.jpg"></div></div><div class="wname">科研风 · 试管</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,72)">72</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_tshirt.jpg"></div></div><div class="wname">清爽白T</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,65)">65</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_gown.jpg"></div></div><div class="wname">学士服 · 毕业季</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,91)">91</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_postman.jpg"></div></div><div class="wname">信使款 · 邮电本源</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,120)">120</div></div>
+    <div class="wall-card"><div class="mini-stage"><div class="youbao"><img src="youbao_scarf.jpg"></div></div><div class="wname">红围巾 · 冬日</div><div class="wauthor">@邮宝官方</div><div class="wlikes" onclick="wallLike(this,58)">58</div></div>
+  </div>
+</div></div>
+
+<script>
+/* ===== 全局状态 ===== */
+let currentRole='student', currentBoard=null, searchHistory=[], drafts=[];
+const ROLE_META={student:{name:'学生',icon:'🧑‍🎓'},teacher:{name:'任课教师',icon:'👨‍🏫'},staff:{name:'教职工',icon:'👮'},undergrad:{name:'本专科生',icon:'🧑‍🎓'},grad:{name:'研究生',icon:'👨‍🎓'},continuing:{name:'继续教育学生',icon:'📚'},other:{name:'其他人员',icon:'🪪'}};
+const MOOD_META={'开心':{icon:'😊',label:'开心'},'失落':{icon:'😔',label:'失落'},'兴奋':{icon:'🤩',label:'兴奋'},'淡定':{icon:'😐',label:'淡定'}};
+const CHAR_PREFIX={'温柔体贴':'亲爱的同学～','严谨':'根据文件规定，','高冷毒舌':'哦？这都不知道？','幽默':'哈哈这个问题有意思！'};
+
+/* ===== 主题色 ===== */
+function pickTheme(el,brand,name,light,bg1,bg2){
+  document.querySelectorAll('#themeSwatches .swatch').forEach(s=>s.classList.remove('on')); el.classList.add('on');
+  const r=document.documentElement.style;
+  r.setProperty('--brand',brand); r.setProperty('--brand-light',light); r.setProperty('--bg1',bg1); r.setProperty('--bg2',bg2);
+  document.getElementById('curTheme').textContent=name;
+  // 暗夜模式特殊处理
+  if(name==='暗夜黑'){r.setProperty('--text','#e0e0e0');r.setProperty('--text-sub','#aab');r.setProperty('--card','#3a3f4a');r.setProperty('--border','#4a4f5a');}
+  else{r.setProperty('--text','#234');r.setProperty('--text-sub','#567');r.setProperty('--card','#fff');r.setProperty('--border','#e3edf7');}
+}
+
+/* ===== 身份认证 ===== */
+/* 统一身份验证码：7位 = 前2位分段号 + 后5位序号，按前2位识别身份 */
+const AUTH_KEY='youbao_auth_v1';
+let authState={verified:false,pending:false,name:'',code:'',roleKey:'',expireAt:0};
+try{const _as=localStorage.getItem(AUTH_KEY);if(_as){const parsed=JSON.parse(_as);if(parsed.expireAt&&Date.now()<parsed.expireAt){authState=Object.assign(authState,parsed);}else{localStorage.removeItem(AUTH_KEY);}}}catch(e){}
+function saveAuth(){try{localStorage.setItem(AUTH_KEY,JSON.stringify(authState));}catch(e){}}
+const CODE_RULES=[{min:1,max:5,key:'staff',name:'教职工（教师端）',icon:'👮'},{min:6,max:30,key:'undergrad',name:'本专科生',icon:'🧑‍🎓'},{min:31,max:45,key:'grad',name:'研究生',icon:'👨‍🎓'},{min:46,max:60,key:'reserved',name:'预留号段',icon:'❔'},{min:61,max:70,key:'continuing',name:'继续教育学生',icon:'📚'},{min:71,max:80,key:'other',name:'其他人员',icon:'🪪'},{min:81,max:99,key:'reserved',name:'预留号段',icon:'❔'}];
+function classifyCode(code){const seg=parseInt(code.slice(0,2),10);if(isNaN(seg))return null;return CODE_RULES.find(r=>seg>=r.min&&seg<=r.max)||null;}
+let staffTypePick=1,proofReady=false;
+function openAuth(){document.getElementById('authCode').value='';document.getElementById('authName').value='';document.getElementById('staffSection').style.display='none';document.getElementById('proofSection').style.display='none';const u=document.getElementById('proofUpload');u.classList.remove('done');u.textContent='📁 点击选择身份证明文件';proofReady=false;staffTypePick=1;updateStaffBtns();document.getElementById('authMask').classList.add('show');}
+function closeAuth(){document.getElementById('authMask').classList.remove('show');}
+function pickStaffType(t){staffTypePick=t;updateStaffBtns();document.getElementById('proofSection').style.display=t===2?'block':'none';}
+function updateStaffBtns(){document.getElementById('staffT1').classList.toggle('on',staffTypePick===1);document.getElementById('staffT2').classList.toggle('on',staffTypePick===2);}
+function onProofPick(inp){if(inp.files&&inp.files.length){proofReady=true;const u=document.getElementById('proofUpload');u.classList.add('done');u.textContent='✅ 已选择：'+inp.files[0].name;}}
+function onCodeInput(v){v=(v||'').replace(/\D/g,'').slice(0,7);document.getElementById('authCode').value=v;const hint=document.getElementById('codeHint');const sec=document.getElementById('staffSection');
+  if(v.length>=2){const seg=classifyCode(v);if(seg){hint.innerHTML='识别号段：<b>'+seg.icon+' '+seg.name+'</b>'+(seg.key==='reserved'?' · ⚠️ 预留号段，暂不支持认证':'');sec.style.display=seg.key==='staff'?'block':'none';if(seg.key!=='staff')document.getElementById('proofSection').style.display='none';return;}}
+  hint.innerHTML='号段规则：01-05 教职工 · 06-30 本专科生 · 31-45 研究生<br>61-70 继续教育 · 71-80 其他人员 · 46-60 / 81-99 预留号段暂不支持';sec.style.display='none';document.getElementById('proofSection').style.display='none';}
+function submitAuth(){const code=document.getElementById('authCode').value.trim();const name=document.getElementById('authName').value.trim();const remember=document.getElementById('rememberAuth').checked;
+  if(!/^\d{7}$/.test(code)){demoToast('❌ 验证码须为 7 位数字');return;}
+  if(!name){demoToast('❌ 请填写姓名');return;}
+  const seg=classifyCode(code);
+  if(!seg||seg.key==='reserved'){demoToast('❌ 46-60 / 81-99 为预留号段，暂不支持认证');return;}
+  const expire=remember?Date.now()+7*24*60*60*1000:0;
+  if(seg.key==='staff'){
+    if(staffTypePick===2&&!proofReady){demoToast('❌ 非教师教职工需上传身份证明');return;}
+    if(staffTypePick===2){authState={verified:false,pending:true,name,code,roleKey:'staff',expireAt:expire};saveAuth();updateBadge();closeAuth();demoToast('⏳ 证明材料已提交，管理员审核中…');setTimeout(()=>{authState.pending=false;authState.verified=true;authState.expireAt=expire;saveAuth();updateBadge();demoToast('✅ 审核通过！欢迎你，'+name+'（非教师教职工）');},2000);return;}
+    authState={verified:true,pending:false,name,code,roleKey:'teacher',expireAt:expire};currentRole='teacher';saveAuth();updateBadge();closeAuth();demoToast('✅ 认证成功！👨‍🏫 任课教师 · '+name+(remember?' · 7天内免登录':''));return;}
+  authState={verified:true,pending:false,name,code,roleKey:seg.key,expireAt:expire};currentRole=(seg.key==='undergrad'||seg.key==='grad')?'student':'staff';saveAuth();updateBadge();closeAuth();demoToast('✅ 认证成功！'+seg.icon+' '+seg.name+' · '+name+(remember?' · 7天内免登录':''));}
+function updateBadge(){const b=document.getElementById('idBadge'),a=document.getElementById('roleAvatar'),n=document.getElementById('roleName'),hn=document.getElementById('helloName');
+  if(authState.pending){b.className='id-badge pending';a.textContent='⏳';n.textContent='审核中';if(hn)hn.textContent=authState.name||'同学';}
+  else if(!authState.verified){b.className='id-badge unverified';a.textContent='🔒';n.textContent='未认证 · 点击认证';if(hn)hn.textContent='同学';}
+  else{b.className='id-badge';const meta=ROLE_META[authState.roleKey]||{name:'未知',icon:'🪪'};a.textContent=meta.icon;n.textContent=meta.name+' · '+(authState.name||'');if(hn)hn.textContent=authState.name||'同学';}
+  if(currentBoard==='help')showBoard('help');}
+function onBadgeClick(e){if(!authState.verified&&!authState.pending){openAuth();}else{toggleRoleMenu(e);}}
+function toggleRoleMenu(e){e.stopPropagation();const m=document.getElementById('roleMenu'),r=e.currentTarget.getBoundingClientRect();m.style.left=(r.right-240)+'px';m.style.top=(r.bottom+8)+'px';renderRoleMenu();m.classList.add('show');}
+function renderRoleMenu(){const b=document.getElementById('roleMenuBody');
+  if(!authState.verified){b.innerHTML='<div style="padding:10px 14px;font-size:12px;color:#89a;line-height:1.9">🔒 尚未完成身份认证<br>认证后解锁：<b>发帖 / 提问 · 邮宝形象设计</b><button class="auth-go" onclick="document.getElementById(\'roleMenu\').classList.remove(\'show\');openAuth()">🪪 去认证</button></div>';return;}
+  const meta=ROLE_META[authState.roleKey]||{name:'未知',icon:'🪪'};
+  b.innerHTML='<div class="role-info"><div class="ri-row"><span>姓名</span><b>'+esc(authState.name)+'</b></div><div class="ri-row"><span>验证码</span><b>'+authState.code+'</b></div><div class="ri-row"><span>身份</span><b>'+meta.icon+' '+meta.name+'</b></div><div class="ri-row"><span>状态</span><b style="color:#1e8e4e">✔ 已认证</b></div>'+(authState.expireAt? '<div class="ri-row"><span>记住状态</span><b style="color:var(--brand)">✓ 7天内免登录</b></div><div class="ri-row"><span>到期时间</span><b style="font-size:11px">'+new Date(authState.expireAt).toLocaleDateString()+' '+new Date(authState.expireAt).toLocaleTimeString().slice(0,5)+'</b></div>':'')+'<button class="auth-out" onclick="logoutAuth()">退出认证</button></div>';}
+function logoutAuth(){authState={verified:false,pending:false,name:'',code:'',roleKey:'',expireAt:0};saveAuth();currentRole='student';updateBadge();document.getElementById('roleMenu').classList.remove('show');demoToast('已退出身份认证（记住状态已清除）');}
+/* 权限拦截：未认证只能查看 */
+function requireAuth(actionName){if(authState.pending){demoToast('⏳ 身份审核中，请稍候…');return false;}if(!authState.verified){demoToast('🔒 请先完成身份认证再'+actionName);setTimeout(openAuth,450);return false;}return true;}
+updateBadge();
+document.addEventListener('click',e=>{if(!e.target.closest('#roleMenu')&&!e.target.closest('.id-badge'))document.getElementById('roleMenu').classList.remove('show');if(!e.target.closest('.ctx-menu'))document.getElementById('ctxMenu').classList.remove('show');if(!e.target.closest('.ts-input-wrap'))document.getElementById('searchDropdown').classList.remove('show');});
+
+/* ===== 搜索栏 ===== */
+function showSearchHistory(){const dd=document.getElementById('searchDropdown');let items='';if(searchHistory.length){items=searchHistory.map((s,i)=>'<div class="ts-item" onclick="doSearch(\''+s.replace(/'/g,"\\'")+'\')"><span>🕐</span><span>'+s+'</span><span class="del" onclick="event.stopPropagation();delSearch('+i+')">✕</span></div>').join('');items='<div class="ts-clear" onclick="clearSearchHistory()">🗑 清除全部搜索记录</div>'+items;}else{items='<div class="ts-item" style="color:#9ab">暂无搜索记录</div>';}dd.innerHTML=items;dd.classList.add('show');}
+function doSearch(q){q=q.trim();if(!q)return;if(!searchHistory.includes(q)){searchHistory.unshift(q);if(searchHistory.length>10)searchHistory.pop();}document.getElementById('searchInput').value=q;document.getElementById('searchDropdown').classList.remove('show');// 搜索逻辑：匹配板块+知识库
+const r=matchKB(q);if(r){openChatWith(q);}else{openChatWith(q);}demoToast('搜索：'+q);}
+function delSearch(i){searchHistory.splice(i,1);showSearchHistory();}
+function clearSearchHistory(){searchHistory=[];document.getElementById('searchDropdown').classList.remove('show');demoToast('搜索记录已清除');}
+function filterSearch(v){/* 输入时实时过滤（预留） */}
+
+/* ===== 实时天气（Open-Meteo API，重庆南岸，点击可刷新） ===== */
+const WMO_MAP={0:['☀️','晴'],1:['🌤','基本晴'],2:['⛅','多云'],3:['☁️','阴'],45:['🌫','雾'],48:['🌫','雾凇'],51:['🌦','毛毛雨'],53:['🌦','毛毛雨'],55:['🌦','毛毛雨'],61:['🌧','小雨'],63:['🌧','中雨'],65:['🌧','大雨'],66:['🌧','冻雨'],67:['🌧','冻雨'],71:['🌨','小雪'],73:['🌨','中雪'],75:['❄️','大雪'],77:['❄️','雪粒'],80:['🌦','阵雨'],81:['🌦','阵雨'],82:['⛈','强阵雨'],85:['🌨','阵雪'],86:['🌨','阵雪'],95:['⛈','雷暴'],96:['⛈','雷暴+冰雹'],99:['⛈','雷暴+冰雹']};
+let _wRetryCount=0, _wBusy=false;
+async function fetchRealWeather(){
+  if(_wBusy)return;_wBusy=true;
+  try{
+    const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=29.53&longitude=106.50&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia%2FShanghai',{cache:'no-store'});
+    if(!res.ok)throw new Error('API '+res.status);
+    const data=await res.json();
+    const c=data.current;if(!c)throw new Error('no data');
+    const wm=WMO_MAP[c.weather_code]||['🌤','未知'];
+    document.getElementById('wIcon').textContent=wm[0];
+    document.getElementById('wTemp').textContent=Math.round(c.temperature_2m)+'°C';
+    document.getElementById('wDesc').textContent=wm[1];
+    const upd=c.time?c.time.slice(11,16):'';
+    document.getElementById('wCity').textContent='重庆·南岸 '+(upd?upd+'更新 ':'')+'湿度'+c.relative_humidity_2m+'% 风'+Math.round(c.wind_speed_10m)+'km/h';
+    document.getElementById('weatherWidget').classList.add('live');
+    document.getElementById('weatherWidget').classList.remove('offline');
+    _wRetryCount=0;
+    return true;
+  }catch(e){
+    console.log('实时天气获取失败:',e.message);
+    _wRetryCount++;
+    if(_wRetryCount<=3){ setTimeout(fetchRealWeather, 15000*_wRetryCount); }
+    else {
+      document.getElementById('wIcon').textContent='📡';
+      document.getElementById('wDesc').textContent='点击重试';
+      document.getElementById('weatherWidget').classList.add('offline');
+      document.getElementById('weatherWidget').classList.remove('live');
+    }
+    return false;
+  }finally{_wBusy=false;}
+}
+function refreshWeatherNow(){
+  document.getElementById('wDesc').textContent='刷新中…';
+  _wRetryCount=0;
+  fetchRealWeather();
+}
+fetchRealWeather();
+setInterval(fetchRealWeather,10*60*1000);
+
+/* 小屏适配：天气组件与演示控制条不遮挡内容 */
+const _mq=window.matchMedia('(max-width: 760px)');
+function _applyMQ(){const w=document.getElementById('weatherWidget');if(!w)return;const c=w.querySelector('.w-city');if(_mq.matches){w.style.left='10px';w.style.right='auto';w.style.bottom='58px';w.style.maxWidth='130px';w.style.padding='6px 9px';if(c)c.style.display='none';}else{w.style.left='auto';w.style.right='20px';w.style.bottom='20px';w.style.maxWidth='';w.style.padding='';if(c)c.style.display='';}}
+_mq.addEventListener?_mq.addEventListener('change',_applyMQ):_mq.addListener(_applyMQ);_applyMQ();
+
+/* ===== 邮宝三态 + 拖动 ===== */
+let clickTimer=null;const mini=document.getElementById('youbaoMini'),expanded=document.getElementById('youbaoExpanded');
+// 拖动逻辑
+let isDragging=false,dragMoved=false,dragStartX=0,dragStartY=0,dragOrigX=0,dragOrigY=0;
+mini.addEventListener('mousedown',e=>{
+  isDragging=true;dragMoved=false;dragStartX=e.clientX;dragStartY=e.clientY;
+  const rect=mini.getBoundingClientRect();const appRect=document.querySelector('.app').getBoundingClientRect();
+  dragOrigX=rect.left-appRect.left;dragOrigY=rect.top-appRect.top;
+  mini.classList.add('dragging');
+  e.preventDefault();
+});
+document.addEventListener('mousemove',e=>{
+  if(!isDragging)return;
+  const dx=e.clientX-dragStartX,dy=e.clientY-dragStartY;
+  if(Math.abs(dx)>5||Math.abs(dy)>5)dragMoved=true;
+  const appRect=document.querySelector('.app').getBoundingClientRect();
+  let nx=dragOrigX+dx,ny=dragOrigY+dy;
+  nx=Math.max(0,Math.min(nx,appRect.width-mini.offsetWidth));
+  ny=Math.max(56,Math.min(ny,appRect.height-mini.offsetHeight));
+  mini.style.right='auto';mini.style.bottom='auto';mini.style.left=nx+'px';mini.style.top=ny+'px';
+});
+document.addEventListener('mouseup',()=>{
+  if(!isDragging)return;isDragging=false;mini.classList.remove('dragging');
+});
+mini.addEventListener('click',e=>{
+  if(dragMoved)return; // 拖动后不触发点击
+  if(clickTimer)return;clickTimer=setTimeout(()=>{
+    clickTimer=null;const willShow=!expanded.classList.contains('show');
+    const miniRect=mini.getBoundingClientRect();const appRect=document.querySelector('.app').getBoundingClientRect();
+    expanded.style.left=(miniRect.left-appRect.left)+'px';expanded.style.top=(miniRect.top-appRect.top-mini.offsetHeight)+'px';
+    expanded.classList.toggle('show',willShow);
+    mini.style.opacity=willShow?'0':'1';mini.style.pointerEvents=willShow?'none':'auto';
+  },260);
+});
+mini.addEventListener('dblclick',e=>{
+  if(dragMoved)return;
+  if(clickTimer){clearTimeout(clickTimer);clickTimer=null;}
+  expanded.classList.remove('show');mini.style.opacity='1';mini.style.pointerEvents='auto';openChat();
+});
+expanded.addEventListener('click',()=>{expanded.classList.remove('show');mini.style.opacity='1';mini.style.pointerEvents='auto';});
+expanded.addEventListener('dblclick',()=>{expanded.classList.remove('show');mini.style.opacity='1';mini.style.pointerEvents='auto';openChat();});
+
+/* ===== 闪电自动触发 ===== */
+function setThinking(on){document.querySelectorAll('.youbao').forEach(el=>el.classList.toggle('thinking',on));const st=document.getElementById('statusText');if(st){on?(st.textContent='思考中 ⚡…',st.classList.add('thinking-status')):(st.textContent='在线 · 随时待命',st.classList.remove('thinking-status'));}}
+
+/* ===== 板块数据 ===== */
+const BOARDS={life:{icon:'🍜',title:'生活',action:'✍️ 发帖',type:'community'},help:{icon:'🙋',title:'帮助',action:'✍️ 提问',type:'qa'},schol:{icon:'🎓',title:'奖学金',action:'💬 问邮宝',type:'info'},ceping:{icon:'📊',title:'综测',action:'💬 问邮宝',type:'info'},match:{icon:'🏆',title:'比赛',action:'💬 问邮宝',type:'info'},notice:{icon:'📢',title:'通知',action:'✍️ 让邮宝写通知',type:'info'},plan:{icon:'🗺️',title:'规划',action:'💬 问邮宝',type:'info'},cat:{icon:'🐱',title:'猫咪',action:'🐱 查看领养',type:'cat'}};
+const lifePosts=[{tag:'求助',tagcls:'ask',title:'大一新生求问：想转专业去计算机，现在要做哪些准备？',author:'经管·小王',role:'stu',replies:23,views:156,likes:12,liked:false},{tag:'分享',tagcls:'share',title:'2026秋季校车时刻表整理版（含周末班次变动）',author:'通信·小李',role:'stu',replies:45,views:892,likes:67,liked:true},{tag:'讨论',tagcls:'talk',title:'雨季从桂花坡到太极湖怎么走最不淋雨？',author:'自动化·小张',role:'stu',replies:31,views:421,likes:28,liked:false},{tag:'公告',tagcls:'notice',title:'教育超市营业时间调整至 22:30 的通知',author:'后勤管理处',role:'staff',replies:8,views:640,likes:19,liked:false}];
+const helpPosts=[{tag:'已解答',tagcls:'solved',title:'评优申报的入口在哪里？截止时间什么时候？',author:'外语·小陈',role:'stu',replies:6,answered:true,answerBy:'辅导员·李老师',answerRole:'teacher',answer:'入口在学生工作系统 → 评优申报模块，学院初审后报送学工部。评优每学年一次，具体截止时间以学院通知为准，记得志愿服务时长需满 20 小时。'},{tag:'已解答',tagcls:'solved',title:'宿舍空调报修的完整流程是？',author:'计算机·小周',role:'stu',replies:4,answered:true,answerBy:'后勤·王老师',answerRole:'staff',answer:'后勤服务网 → 在线报修 → 填写宿舍号和故障描述，一般 24 小时内上门。'},{tag:'待解答',tagcls:'waiting',title:'大创项目结题材料准备的顺序是什么？',author:'生信·小吴',role:'stu',replies:2,answered:false},{tag:'已解答',tagcls:'solved',title:'体测缓测在哪里申请？',author:'体育·小郑',role:'stu',replies:3,answered:true,answerBy:'体育部·刘老师',answerRole:'teacher',answer:'到体育部办公室领取缓测申请表，附校医院证明，经学院盖章后交回。'}];
+/* 美食推荐数据（多方收集·仅供参考）：QQ频道「重邮大学生活圈」美食讨论整理（2026-10）· 并入生活板块作为参考建议，非独立板块 */
+const FOOD_DATA={"canteen":[{"e":"🍚","n":"中心食堂 · 酸辣白菜拌面","d":"8 元巨实惠，中心食堂口碑天花板","p":"8","l":"中心食堂","r":"4.6","cm":["同学A：酸辣白菜拌面8块钱巨实惠巨好吃","同学B：其他的档口都巨难吃，位置装修还可以，只有外表了"],"w":0},{"e":"🍝","n":"中心食堂 · 二楼咖喱堡饭（意面）","d":"被称\"神意面\"，意面爱好者必试","p":"未提及","l":"中心食堂二楼","r":"4.5","cm":["同学A：中心食堂2楼咖喱堡饭我愿称之神意面","同学B：那我可得找个时间尝一下这个神意面了"],"w":0},{"e":"🍳","n":"中心食堂 · 一楼滑蛋饭","d":"口感嫩滑，档口人气款","p":"未提及","l":"中心食堂一楼","r":"4.3","cm":["同学A：一楼的滑蛋饭还行"],"w":0},{"e":"🥗","n":"中心食堂 · 一楼减脂餐（轻食）","d":"性价比不错的健康餐，减脂党友好","p":"13-17","l":"中心食堂一楼","r":"4.2","cm":["同学A：一楼的减脂餐性价比不错","同学B：好像13-17不等，跟外面的价格比算不错的了，不过蛋白质感觉品质一般，毕竟价格在那里。主食分量比较多（喊阿姨少打点建议当减脂餐吃）"],"w":0},{"e":"🍚","n":"中心食堂 · 一楼牛肉饭（轻食牛肉饭）","d":"好吃到\"外卖都不想点了\"，多帖复推","p":"未提及","l":"中心食堂一楼","r":"4.7","cm":["同学A：牛肉饭真的好好吃。。。外卖也不想点了就想吃那个牛肉饭😭","同学B：一楼的牛肉饭真的不错","同学C：一楼已吃的：牛肉饭轻食夯夯夯！"],"w":0},{"e":"🍗","n":"中心食堂 · 一楼干锅脆皮鸡 / 辣子鸡","d":"分量大味道好，食量小慎买","p":"未提及","l":"中心食堂一楼","r":"4.5","cm":["同学A：脆皮鸡（食量小的话慎买）","同学B：脆皮鸡那的辣子鸡，好吃"],"w":0},{"e":"🍚","n":"中心食堂 · 一楼炒饭","d":"便宜管饱，豆豉偏多","p":"5","l":"中心食堂一楼","r":"4.0","cm":["同学A：一楼的炒饭好吃，就是豆豉有点多","同学B：炒饭有点油太干了不爱吃（个人口味）"],"w":0},{"e":"🍜","n":"中心食堂 · 一楼粉类（米线/螺蛳粉）","d":"螺蛳粉酸笋偏甜，想吃好的建议校外","p":"未提及","l":"中心食堂一楼","r":"3.8","cm":["同学A：我觉得好吃😋但学校外面更好吃！","同学B：还行，就是酸笋太甜了","同学C：一般般，别抱有什么期望"],"w":0},{"e":"🍜","n":"中心食堂 · 一楼小面","d":"4 元二两便宜管饱，口味两极","p":"4","l":"中心食堂一楼","r":"3.9","cm":["同学A：小面4元，煎蛋2元","同学B：面一般（个人口味）"],"w":0},{"e":"🍜","n":"中心食堂 · 二楼兰州纯汤牛肉面","d":"汤纯肉香，二楼口碑款","p":"未提及","l":"中心食堂二楼（窗口12）","r":"4.4","cm":["同学A：二楼的牛肉面好吃😋","同学B：一楼米线，二楼兰州拉面都可以"],"w":0},{"e":"🍚","n":"中心食堂 · 二楼金掌柜拌饭","d":"多人复推的招牌拌饭","p":"未提及","l":"中心食堂二楼（窗口18）","r":"4.5","cm":["同学A：二楼金掌柜拌饭好吃","同学B：拌饭好吃（个人点评中同款推荐）"],"w":0},{"e":"🥔","n":"中心食堂 · 二楼土豆泥拌饭","d":"可拼菜可加土豆泥，目前已下架","p":"未提及","l":"中心食堂二楼","r":"4.2","cm":["同学A：我喜欢那个土豆泥拌饭，可以拼，还可以和阿姨说多点土豆泥","同学B：悲报，今天去二楼看了，土豆泥已经没了😔"],"w":0},{"e":"🍖","n":"中心食堂 · 二楼牧童猪脚饭","d":"有同学吃了一整个学期","p":"未提及","l":"中心食堂二楼（窗口16）","r":"4.5","cm":["同学A：二楼牧童猪脚饭，听劝了","同学B：上学期吃了一学期"],"w":0},{"e":"🥬","n":"中心食堂 · 二楼自选菜（米食邮）","d":"荤素同价按斤称，减脂党常驻","p":"17.8/斤，米饭加1元","l":"中心食堂二楼","r":"4.4","cm":["同学A：选自选菜，一拳米饭一拳蛋白一拳蔬菜，成本六七块","同学B：自选菜 17.8 一斤大概，米饭加一块，你拿的少自然就便宜","同学C：二楼，有一大块区域（中心食堂的在哪里呀？我怎么没看到过）"],"w":0},{"e":"🦆","n":"中心食堂 · 二楼冒烤鸭（绝世皇鸭）","d":"汤底可以，烤鸭肉一般","p":"未提及","l":"中心食堂二楼（窗口15）","r":"3.9","cm":["同学A：冒烤鸭的汤底可以但是冒烤鸭里面的烤鸭肉不好吃"],"w":0},{"e":"🌶️","n":"中心食堂 · 二楼小炒（湖南小炒）","d":"分量少口味不佳","p":"未提及","l":"中心食堂二楼（窗口17）","r":"3.5","cm":["同学A：小炒不好吃还少（个人口味）"],"w":0},{"e":"🍲","n":"中心食堂 · 二楼麻辣烫（辣功堂）","d":"汤底口碑差","p":"未提及","l":"中心食堂二楼（窗口13）","r":"3.0","cm":["同学A：麻辣烫每种汤底都不好吃"],"w":0},{"e":"🔥","n":"中心食堂 · 二楼铁板档口 ⚠️","d":"难吃且性价比低（2 人差评）","p":"未提及","l":"中心食堂二楼（麻辣烫旁）","r":"2.0","cm":["同学A：二楼麻辣烫旁边那个铁板什么玩意来着很难吃，性价比也低","同学B：铁板也拉完了"],"w":1},{"e":"🍚","n":"中心食堂 · 二楼现炒浇头饭 / 浇头小火锅","d":"现炒浇头，被推荐","p":"未提及","l":"中心食堂二楼","r":"4.4","cm":["同学A：一楼轻食牛肉饭 二楼浇头小火锅","同学B：二楼现炒浇头饭"],"w":0},{"e":"🍲","n":"中心食堂 · 二楼山城火锅","d":"藤椒锅底是招牌，素菜可以","p":"未提及","l":"中心食堂二楼","r":"4.2","cm":["同学A：2楼山城火锅的藤椒味锅底好吃，肉菜的话只有小块的鱼片好吃，素菜都还行"],"w":0},{"e":"🍔","n":"中心食堂 · 麦当劳","d":"可办学期卡，校内西式快餐","p":"学期卡更划算","l":"中心食堂一楼","r":"4.3","cm":["同学A：有麦当劳，去办个学期卡","同学B：中心食堂麦当劳早餐（早餐也可以）"],"w":0},{"e":"🥟","n":"中心食堂 · 面夫子","d":"奶香小馒头超好吃，红糖馒头也好吃","p":"未提及","l":"中心食堂一楼","r":"4.7","cm":["同学A：中心面夫子奶香小馒头超好吃…","同学B：我觉得中心面夫子的红糖馒头好吃"],"w":0},{"e":"🥟","n":"中心食堂 · 包子（靠近阳乐食堂方向）","d":"被点名的好吃包子","p":"未提及","l":"中心食堂","r":"4.4","cm":["同学A：靠近千喜鹤（现阳乐食堂）那家包子好吃"],"w":0},{"e":"🥗","n":"中心食堂 · 草料场（轻食）","d":"清淡少盐，但排队多","p":"未提及","l":"中心食堂","r":"4.0","cm":["同学A：吃中心食堂轻食","同学B：轻食我是真受不了 每次都排队"],"w":0},{"e":"🥟","n":"中心食堂 · 海味馄饨","d":"口碑两极","p":"未提及","l":"中心食堂","r":"3.6","cm":["同学A：我觉得海味馄饨还可以","同学B：从没吃到过好吃的"],"w":0},{"e":"🍗","n":"中心食堂 · 笑傲江湖套餐（减脂推荐）","d":"鸡腿+鸭腿+蔬菜 11 元，减脂党吃了大半年","p":"11","l":"中心食堂进门（窗口3）","r":"4.5","cm":["同学A：中心进门套餐，一个鸡腿一个鸭腿一份蔬菜11块，我吃了大半年了","同学B：就那个什么江湖嘛（对，就是笑傲江湖档口）","同学C：这个很中心了 但是我感觉有点咸"],"w":0},{"e":"🥐","n":"中心食堂 · 鸡腿包（早餐）","d":"早餐人气款","p":"未提及","l":"中心食堂","r":"4.3","cm":["同学A：中心的鸡腿包不赖"],"w":0},{"e":"🏠","n":"兴业苑食堂 · 整体","d":"曾被评为\"最好吃的食堂\"，不定期搞活动","p":"未提及","l":"兴业苑食堂","r":"4.5","cm":["同学A：快乐食间，很久没去吃了之前非常爱吃，觉得是最好吃的食堂","同学B：莘莘食堂旁边的快乐食间一定要去，好吃😋而且不定时会搞点活动"],"w":0},{"e":"🦆","n":"兴业苑食堂 · 港式烧腊","d":"鸡腿鸭腿\"降维打击\"全校同类","p":"未提及","l":"兴业苑食堂","r":"4.7","cm":["同学A：港式烧腊，鸡腿鸭腿降维打击学校其他同类档口"],"w":0},{"e":"🍜","n":"兴业苑食堂 · 鲜汤牛肉粉","d":"牛肉和粉非常鲜美","p":"未提及","l":"兴业苑食堂","r":"4.6","cm":["同学A：鲜汤牛肉粉牛肉和粉非常鲜美"],"w":0},{"e":"🍚","n":"兴业苑食堂 · 饭大伯自选","d":"种类全校最多，荤素同价","p":"17.8/斤","l":"兴业苑食堂","r":"4.6","cm":["同学A：饭大伯自选种类算是最多的","同学B：我知道快乐食间和中心食堂有，荤素同价自选 17.8 一斤，米饭加一块，拿的少自然就便宜","同学C：快乐食间的自选名字叫\"饭大伯\""],"w":0},{"e":"🍜","n":"兴业苑食堂 · 西安面馆","d":"偏油，口碑一般（个人口味）","p":"未提及","l":"兴业苑食堂","r":"3.6","cm":["同学A：西安面馆感觉没有很好吃，很油"],"w":0},{"e":"🍚","n":"兴业苑食堂 · 大众餐","d":"价格实惠但疑似涨价","p":"一荤两素 11 元","l":"兴业苑食堂","r":"4.0","cm":["同学A：兴业苑大众餐价格好像涨了两块，今儿一荤两素收了我11。也可能是刚开业的原因"],"w":0},{"e":"🍜","n":"兴业苑食堂 · 二楼豌杂面","d":"\"夯爆了\"，多人力荐","p":"未提及","l":"兴业苑食堂二楼","r":"4.7","cm":["同学A：二楼快乐食间的豌杂面，夯爆了"],"w":0},{"e":"🍗","n":"兴业苑食堂 · 柠檬手撕鸡","d":"清爽口味被推荐","p":"未提及","l":"兴业苑食堂","r":"4.4","cm":["同学A：快乐食间柠檬手撕鸡"],"w":0},{"e":"🌶️","n":"兴业苑食堂 · 川湘小炒","d":"小炒类口碑款","p":"未提及","l":"兴业苑食堂","r":"4.3","cm":["同学A：快乐食间的川湘小炒也可以"],"w":0},{"e":"🦆","n":"兴业苑食堂 · 烤鸭饭","d":"挺好吃","p":"未提及","l":"兴业苑食堂","r":"4.4","cm":["同学A：我知道的有兴业苑的自选菜，还有那个烤鸭饭挺好吃的"],"w":0},{"e":"🍗","n":"兴业苑食堂 · 肯德基","d":"\"学校最好吃\"，除了贵没缺点","p":"较贵","l":"兴业苑食堂","r":"4.6","cm":["同学A：最好吃的是学校里的肯德基，除了贵没有缺点","同学B：快乐食间肯德基（早餐也有）","同学C：疯狂星期四！"],"w":0},{"e":"🥟","n":"兴业苑食堂 · 凉面（早餐窗口）","d":"有凉面但偏寡淡","p":"未提及","l":"兴业苑食堂早餐窗口","r":"3.8","cm":["同学A：兴业早餐窗口之前卖过凉面，有点寡淡不知道现在是不是还是那个味道"],"w":0},{"e":"🥟","n":"莘莘食堂 · 肠粉","d":"7 元/份，皮略厚，供应时间有讲究","p":"7","l":"莘莘食堂一楼早餐窗口","r":"4.2","cm":["同学A：还想吃莘莘的 听我舍友说莘莘的肠粉也好吃","同学B：莘莘食堂一楼早餐窗口有，7元一份，广东人看起来觉得皮有点厚，没尝过味道","同学C：那天早上九点左右去她说太早了不卖，晚上又关门了"],"w":0},{"e":"🍲","n":"莘莘食堂 · 渔粉","d":"推荐番茄味","p":"未提及","l":"莘莘食堂","r":"4.4","cm":["同学A：渔粉(推荐番茄味)"],"w":0},{"e":"🌶️","n":"莘莘食堂 · 酸辣粉","d":"老食堂口碑款","p":"未提及","l":"莘莘食堂","r":"4.3","cm":["同学A：酸辣粉（推荐帖提及）"],"w":0},{"e":"🍲","n":"莘莘食堂 · 三汁焖锅","d":"被推荐","p":"未提及","l":"莘莘食堂","r":"4.3","cm":["同学A：三汁焖锅（推荐帖提及）"],"w":0},{"e":"🫓","n":"莘莘食堂 · 掉渣烧饼","d":"早餐推荐","p":"未提及","l":"莘莘食堂","r":"4.3","cm":["同学A：掉渣烧饼（推荐帖提及）"],"w":0},{"e":"🍲","n":"莘莘食堂 · 佬等头麻辣烫","d":"与阳乐食堂同品牌","p":"未提及","l":"莘莘食堂","r":"4.3","cm":["同学A：佬等头麻辣烫（推荐帖提及，阳乐食堂也有同款）"],"w":0},{"e":"🍜","n":"莘莘食堂 · 双椒拌面","d":"甜辣口像凉面，超多人吃","p":"未提及","l":"莘莘食堂","r":"4.5","cm":["同学A：双椒拌面(有点像甜辣口凉面) (超多人吃)"],"w":0},{"e":"🍢","n":"莘莘食堂 · 小食层","d":"味道不错但价小贵，座位少","p":"小贵","l":"莘莘食堂一楼","r":"4.1","cm":["同学A：小食层：味道不错价格小贵，打包的比较多，座位少，有小吃(比如辣豆腐脑)"],"w":0},{"e":"🥛","n":"莘莘食堂 · 豆浆 / 早点","d":"早点窗口人气款","p":"未提及","l":"莘莘食堂","r":"4.3","cm":["同学A：莘莘美食城 早点 豆浆！（地图标注）"],"w":0},{"e":"🍲","n":"莘莘食堂 · 煲你满意 · 香菇炖鸡","d":"店名疑似\"煲你满意\"，香菇炖鸡可以","p":"未提及","l":"莘莘食堂","r":"4.2","cm":["同学A：莘莘煲你满意（好像是叫这个名字）的香菇炖鸡可以"],"w":0},{"e":"🍗","n":"味子夫鸡柳","d":"小吃扛把子，炸鸡汉堡冰淇淋都有","p":"未提及","l":"莘莘/兴业苑（待确认）","r":"4.4","cm":["同学A：味子夫鸡柳，小吃扛棒子，炸鸡汉堡冰淇淋推荐"],"w":0},{"e":"🌶️","n":"渝湘小炒","d":"被推荐，疑与校外\"渝湘人家\"同系","p":"未提及","l":"莘莘/兴业苑（待确认）","r":"4.3","cm":["同学A：渝湘小炒不错"],"w":0},{"e":"🍜","n":"滨湖三楼 · 兰州拉面","d":"还可以","p":"未提及","l":"滨湖餐厅三楼","r":"4.0","cm":["同学A：滨湖基本都没吃过，只吃过三楼的兰州拉面，还可以"],"w":0},{"e":"🍜","n":"滨湖 · 龙记山城（凉面）","d":"凉面还不错","p":"未提及","l":"滨湖餐厅","r":"4.3","cm":["同学A：滨湖 龙记山城有（凉面），还挺不错的"],"w":0},{"e":"🍚","n":"滨湖 · 碗碗留香自选菜","d":"自选菜档口","p":"未提及","l":"滨湖餐厅","r":"4.2","cm":["同学A：碗碗留香自选菜（地图标注）"],"w":0},{"e":"🍲","n":"滨湖 · 西施冒菜","d":"地图标\"爆灯\"的人气档口","p":"未提及","l":"滨湖餐厅","r":"4.4","cm":["同学A：西施冒菜（奶砖！！！爆灯！！！地图标注）"],"w":0},{"e":"🍜","n":"阳乐食堂 · 一楼重庆小面","d":"\"校内最好吃的重庆小面没有之一\"","p":"未提及","l":"阳乐食堂一楼","r":"4.8","cm":["同学A：千喜鹤一楼的小面现在是我觉得校内最好吃的重庆小面没有之一"],"w":0},{"e":"🍜","n":"阳乐食堂 · 二楼浇头面","d":"味道不错但要等一会","p":"未提及","l":"阳乐食堂二楼","r":"4.4","cm":["同学A：浇头面（毕业生推荐档口）","同学B：千喜鹤二楼的浇头面味道不错，就是要等上一会"],"w":0},{"e":"🏠","n":"阳乐食堂 · 二楼朱家小馆","d":"毕业生推荐档口","p":"未提及","l":"阳乐食堂二楼","r":"4.3","cm":["同学A：朱家小馆（毕业生推荐帖）"],"w":0},{"e":"🍖","n":"阳乐食堂 · 二楼猪爪爪猪脚饭","d":"双拼注意甜咸串味","p":"未提及","l":"阳乐食堂二楼","r":"4.3","cm":["同学A：猪爪爪猪脚饭（不能甜咸一起点串味不好吃，要双拼两个同样味道的）"],"w":0},{"e":"🥔","n":"阳乐食堂 · 二楼土豆泥拌饭","d":"可拼菜，注意与中心二楼区分","p":"未提及","l":"阳乐食堂二楼","r":"4.2","cm":["同学A：土豆泥拌饭（毕业生推荐档口；中心食堂二楼也有同名，是否同一家待确认）"],"w":0},{"e":"🍲","n":"阳乐食堂 · 二楼张亮麻辣烫","d":"好吃但巨贵，北方口味","p":"偏贵","l":"阳乐食堂二楼","r":"4.1","cm":["同学A：张亮麻辣烫（北方口味但是巨贵我只能说很好吃吃出了故乡的感觉）"],"w":0},{"e":"🥬","n":"阳乐食堂 · 二楼自选菜","d":"比三楼和中心都好吃","p":"未提及","l":"阳乐食堂二楼","r":"4.4","cm":["同学A：千喜鹤二楼自选菜比三楼和中心都好吃看起来"],"w":0},{"e":"🍲","n":"阳乐食堂 · 二楼地锅鸡","d":"13 元实惠，口碑有分歧","p":"13","l":"阳乐食堂二楼","r":"4.2","cm":["同学A：千喜鹤二楼地锅鸡13（推荐）","同学B：外婆小酱拌饭，地锅鸡，小碗菜，都是拉（个人口味差评）"],"w":0},{"e":"🍲","n":"阳乐食堂 · 佬等头麻辣烫","d":"与莘莘同品牌","p":"未提及","l":"阳乐食堂","r":"4.3","cm":["同学A：千喜鹤食堂：佬等头麻辣烫 肉蟹煲 烧肉饭 环境也很不错哦（推荐帖）"],"w":0},{"e":"🦀","n":"阳乐食堂 · 肉蟹煲","d":"推荐帖人气档口","p":"未提及","l":"阳乐食堂","r":"4.4","cm":["同学A：佬等头麻辣烫 肉蟹煲 烧肉饭 环境也很不错哦"],"w":0},{"e":"🍚","n":"阳乐食堂 · 烤盘饭 / 焖饭 / 麻酱鸡丝拌面 / 冰淇淋 / 荤豆花 / 干锅鸡","d":"地图高热标注档口","p":"未提及","l":"阳乐食堂","r":"4.4","cm":["同学A：千喜鹤（地图）：烤盘饭！烧烤！！！焖饭！！！麻酱鸡丝拌面！！！冰淇淋！！！荤豆花！干锅鸡！"],"w":0},{"e":"🍢","n":"阳乐食堂 · 晚上烧烤","d":"有但味道一般","p":"未提及","l":"阳乐食堂","r":"3.8","cm":["同学A：千喜鹤食堂晚上有烧烤 但味道一般"],"w":0},{"e":"🍔","n":"阳乐食堂 · 三楼汉堡","d":"9.9 元两个，性价比之王","p":"9.9/两个","l":"阳乐食堂三楼","r":"4.6","cm":["同学A：除了那个9.9r两个的汉堡🍔，其他都是💩（个人口味，汉堡是真推荐）","同学B：阳乐餐厅（即三楼）有汉堡"],"w":0},{"e":"🍲","n":"阳乐食堂 · 三楼肥肠鸡","d":"好吃","p":"未提及","l":"阳乐食堂三楼","r":"4.4","cm":["同学A：那个肥肠鸡好吃"],"w":0},{"e":"🍲","n":"阳乐食堂 · 三楼三鲜米线 ⚠️","d":"超级腥臭（单人反馈，待印证）","p":"未提及","l":"阳乐食堂三楼","r":"2.5","cm":["同学A：有一家三鲜米线避雷，超级腥臭"],"w":1},{"e":"🍗","n":"阳乐食堂 · 三楼鸡腿（减脂推荐）","d":"两个鸡腿 6 元，蛋白质性价比高","p":"6/两个","l":"阳乐食堂三楼","r":"4.5","cm":["同学A：千喜鹤三楼两个鸡腿6块差不多（减脂攻略推荐）"],"w":0},{"e":"🥟","n":"阳乐食堂 · 一楼红糖馒头","d":"可试试","p":"未提及","l":"阳乐食堂一楼","r":"4.2","cm":["同学A：千喜鹤的一楼的红糖馒头可试试"],"w":0},{"e":"🥟","n":"阳乐食堂 · 豆沙包（早餐）","d":"早餐推荐","p":"未提及","l":"阳乐食堂","r":"4.4","cm":["同学A：樱花的酱肉，千喜鹤（现阳乐）豆沙，我都挺喜欢的"],"w":0},{"e":"🏪","n":"阳乐食堂 · 新开 1 楼（明理苑附近）","d":"东西最新、物美价廉，旁边有蜜雪冰城","p":"实惠","l":"阳乐食堂一楼","r":"4.5","cm":["同学A：一定要先去尝尝，千喜鹤食堂，新开的1楼，在明理苑附近，东西都是最新的，物美价廉，旁边还有蜜雪冰城"],"w":0},{"e":"🥟","n":"阳乐食堂 · 肠粉","d":"二楼饺子抄手处疑似有、三楼也有","p":"未提及","l":"阳乐食堂二楼/三楼","r":"4.0","cm":["同学A：千喜鹤二楼卖饺子抄手的地方好像也卖肠粉","同学B：千喜鹤三楼（有肠粉）"],"w":0},{"e":"🏠","n":"千喜鹤食堂 · 整体","d":"环境比较好","p":"未提及","l":"千喜鹤食堂","r":"4.3","cm":["同学A：樱花食堂环境比较好"],"w":0},{"e":"🔥","n":"千喜鹤食堂 · 二楼铁板烧","d":"有饭和意面选项，意面还行","p":"未提及","l":"千喜鹤食堂二楼","r":"4.2","cm":["同学A：樱花二楼有个铁板烧还行，有饭和意面的选项"],"w":0},{"e":"🍜","n":"千喜鹤食堂 · 小面","d":"4 元二两，还不错","p":"4","l":"千喜鹤食堂","r":"4.3","cm":["同学A：樱花的小面还不错哦(小面4元)"],"w":0},{"e":"🍜","n":"千喜鹤食堂 · 红烧牛肉米线","d":"地图标\"仙品\"","p":"未提及","l":"千喜鹤食堂","r":"4.6","cm":["同学A：樱花 红烧牛肉米线 仙品！！！"],"w":0},{"e":"🌶️","n":"千喜鹤食堂 · 酸辣粉","d":"地图高热标注","p":"未提及","l":"千喜鹤食堂","r":"4.4","cm":["同学A：（地图标注\"酸辣粉 仙品\"）"],"w":0},{"e":"🍜","n":"千喜鹤食堂 · 延生区域 · 宜宾燃面抄手 / 杂粮煎饼","d":"抄手超爱，煎饼室友特别喜欢","p":"未提及","l":"千喜鹤食堂延生区域","r":"4.5","cm":["同学A：宜宾燃面家的抄手(我超爱) 山东杂粮煎饼(室友特别喜欢)","同学B：延生的许多饭都大差不差(比如下饭牛肉饭等)"],"w":0},{"e":"🍜","n":"千喜鹤食堂 · 大西北区域 · 拌面","d":"番茄鸡蛋/孜然牛肉拌面，量大","p":"未提及","l":"千喜鹤食堂大西北区域","r":"4.2","cm":["同学A：大西北 番茄鸡蛋拌面！孜然牛肉拌面！（地图标注）","同学B：重庆人吃不来西北面食，但是量大！！！"],"w":0},{"e":"🥟","n":"千喜鹤食堂 · 酱肉包（早餐）","d":"早餐推荐","p":"未提及","l":"千喜鹤食堂","r":"4.4","cm":["同学A：樱花的酱肉，千喜鹤豆沙，我都挺喜欢的"],"w":0},{"e":"🐟","n":"千喜鹤食堂 · 今日鱼","d":"当日鱼好吃（菜品每日不定）","p":"未提及","l":"千喜鹤食堂","r":"4.3","cm":["同学A：樱花今天的鱼很好吃"],"w":0}],"outside":[{"e":"🍜","n":"土鸡米线","d":"毕业生常去线下吃","p":"未提及","l":"校门外","r":"4.4","cm":["同学A：土鸡米线我喜欢去线下吃"],"w":0},{"e":"🍲","n":"特色锅仔 · 清补凉鸡","d":"分量足，两人一份管饱","p":"未提及","l":"校外","r":"4.5","cm":["同学A：线下爱吃的是特色锅仔的清补凉鸡，两个胃口不是很大的女孩子可以点一份锅仔就行了"],"w":0},{"e":"🦆","n":"杨氏手撕烤鸭","d":"让毕业生念念不忘，但油腻+停业待确认","p":"未提及","l":"校外","r":"4.3","cm":["同学A：杨氏手撕烤鸭毕业离校前一直想再吃一次，但是那段时间没开店，不知道现在还在不","同学B：杨氏手撕烤鸭吃完屁股流油"],"w":0},{"e":"🍲","n":"淮南牛肉汤","d":"口味两极分化","p":"未提及","l":"校外","r":"3.6","cm":["同学A：淮南牛肉汤比较清淡","同学B：淮南牛肉汤难吃","同学C：我觉得还行哈哈哈哈，有段时间想吃点清淡的"],"w":0},{"e":"🥩","n":"九九牛肉馆","d":"牛肉品质好，聚餐优选","p":"未提及","l":"校外","r":"4.5","cm":["同学A：如果和朋友出去想吃点好的可以去九九牛肉馆，那边的牛肉挺好吃的…牛肉是真的不错（去 KTV 之前吃过）"],"w":0},{"e":"🍲","n":"腾飞门对面鸡公煲","d":"半汤口味不错","p":"未提及","l":"腾飞门对面","r":"4.3","cm":["同学A：我吃过腾飞门对面那家鸡公煲，我每次喜欢点半汤的，味道还不错，吃过几次"],"w":0},{"e":"🍢","n":"老九门串串","d":"两人份刚刚好","p":"未提及","l":"校外","r":"4.2","cm":["同学A：老九门串串个人感觉还可以，我和我朋友两个人吃刚刚好，不知道现在菜品味道那些变没"],"w":0},{"e":"🥗","n":"段锅锅凉菜","d":"朋友聚餐爱去","p":"未提及","l":"校外","r":"4.3","cm":["同学A：那个段锅锅凉菜我和我朋友也挺爱吃"],"w":0},{"e":"🧋","n":"李若桃 · 原叶（奶茶）","d":"近期常喝，另有手作酸奶铺","p":"未提及","l":"校外","r":"4.3","cm":["同学A：奶茶现在经常喝的就是李若桃的原叶"],"w":0},{"e":"🧋","n":"霸王茶姬 · 卡美罗","d":"常喝，焦糖先吃一块","p":"未提及","l":"校外","r":"4.5","cm":["同学A：霸王茶姬的卡美罗每次焦糖放进去之前先吃一块"],"w":0},{"e":"🏠","n":"心怡食府","d":"本地人狂推的聚餐店，老板常送饮料","p":"适中偏小贵","l":"崇文门出门不过马路右拐（二楼）","r":"4.5","cm":["同学A：学校旁边的心怡食府，味道很好吃，菜份量适中价格也合适，经常和朋友一起去聚餐吃饭","同学B：崇文门出门不过马路右拐，一楼能看到招牌，餐馆在二楼！！真的非常美味，本地人狂推","同学C：感觉腌过的牛肉不是很好吃"],"w":0},{"e":"🐟","n":"正宗巫山纸包鱼（老店）","d":"味道绝佳，周年庆 59 元超值","p":"98 元套餐/活动价 59 元","l":"崇文门和腾飞门中间（新疆沙湾大盘鸡斜对面）","r":"4.7","cm":["同学A：我吃过很多次了，味道绝佳，价格公道实惠，是同学聚会周末聚餐的好地方","同学B：好吃得很，我刚吃光一大份，➕老板问问，5号开始，我都吃好多次了","同学C：不是新的，是新的那家斜对面的老店，开了两年多了，很好吃"],"w":0},{"e":"🍚","n":"沙县小吃（腾飞门对面）","d":"鸡腿饭平替，味道不错","p":"未提及","l":"腾飞门对面","r":"4.3","cm":["同学A：腾飞门对面的沙县小吃，味道不错"],"w":0},{"e":"🍢","n":"章鱼小丸子（堕落街）","d":"真有章鱼，木鱼须超多","p":"7-10","l":"堕落街（木见水左边小巷）","r":"4.5","cm":["同学A：木见水左边小巷子里面的章鱼丸子（真的有章鱼）还有超多木鱼须，酱料丰富","同学B：为什么我吃那家章鱼小丸子就没有木鱼须","同学C：喊老板给你加（小丸子七块十块都有）"],"w":0},{"e":"🍜","n":"肥姨妈螺蛳粉","d":"好吃但口味两极，冰豆花是亮点","p":"未提及","l":"校外","r":"4.2","cm":["同学A：肥姨妈螺蛳粉，真的很好吃，我期末周经常吃，冰豆花也好吃，有一点凉糕的感觉","同学B：oh no我觉得肥姨妈简直是我吃过最难吃的螺蛳粉了","同学C：😭我觉得很好吃，可能我喜欢这种软软的粉吧"],"w":0},{"e":"🍗","n":"田郭鸡架","d":"酸甜口招牌，甜口爱好者专属","p":"未提及","l":"校外","r":"4.3","cm":["同学A：喜欢吃酸甜口的可以试试他们家的招牌鸡架","同学B：不喜欢甜口的朋友就觉得很甜"],"w":0},{"e":"🍲","n":"小南姜","d":"好吃，能一直加丸子","p":"未提及","l":"校外","r":"4.4","cm":["同学A：小南姜，这几个当中只吃过一次，不过味道很好吃，还能一直加一些丸子之类的"],"w":0},{"e":"🍲","n":"重庆鸡公煲（校门口）","d":"鸡肉最入味，但环境差+疑似搬家","p":"未提及","l":"校门口","r":"4.4","cm":["同学A：名字好像就叫重庆鸡公煲，比较好吃，但是看着没什么人吃，现在好像搬家了","同学B：重庆鸡公煲搬家了吗？我觉得挺好吃的啊","同学C：我也觉得很好吃，是鸡肉最入味的一家，就是感觉环境有点差，而且老板在频道打广告被同学们说了哈哈哈哈哈"],"w":0},{"e":"🥘","n":"鸡公煲系列 · 代善鸡公煲","d":"要点干锅，量小不送小菜","p":"人均20","l":"校外","r":"4.0","cm":["同学A：代善鸡公煲，吃过几次觉得还可以，但是不会送一些小菜…分量不太大，鸡肉最近一次吃觉得有点柴","同学B：代善一直都是假宣传","同学C：代善要点干锅干锅干锅 然后不喜欢吃鸡或者不能吃不新鲜的鸡可以试着点素锅 会更便宜而且味道也不差"],"w":0},{"e":"🥘","n":"鸡公煲系列 · 熊氏鸡公煲","d":"加油条是灵魂，不要加排骨","p":"人均20","l":"校外","r":"4.5","cm":["同学A：熊式鸡公煲，加油条很好吃，味道也很可以，鸡肉比较嫩，但是不要➕排骨！！！排骨不好吃","同学B：熊氏鸡公煲量大实惠但是口味很重，外卖拉完了，堂食人均20吃成良子","同学C：熊氏鸡公煲味道适合味道稍微重一点的人群 口味没得说 菜量也够吃"],"w":0},{"e":"🥘","n":"鸡公煲系列 · 刘氏鸡公煲 ⚠️ 避雷","d":"多人差评：菜品不新鲜、全是火锅底料味","p":"人均20（微饱）","l":"校外","r":"2.5","cm":["同学A：刘氏鸡公煲，量小并且感觉鸡肉不好，用的非常重的料…之前店庆7.8折去吃过一次，人均20微饱，不值","同学B：刘氏鸡公煲拉完了 菜品不新鲜鸡肉不好吃 全是火锅底料的味道","同学C：刘氏鸡公煲 特别特别好吃（口碑两极分化，少数人很喜欢）"],"w":1},{"e":"🍗","n":"燃情花雕醉鸡","d":"人均 30 水果无限吃，口味优于听林里","p":"人均30","l":"校外","r":"4.4","cm":["同学A：燃情花雕醉鸡：人均30水果无限吃…口味燃情大于听林里，价格也是燃情性价比高（只能点微微辣，点辣的只有辣味没法吃了）","同学B：燃情比听林里口味好一点 听林里不能说难吃但是没有性价比"],"w":0},{"e":"🍲","n":"嘎嘎香火锅鸡","d":"量巨大超值，不能点麻辣","p":"人均30（约20鸡肉+10自助）","l":"校外","r":"4.4","cm":["同学A：嘎嘎香火锅鸡…火锅鸡量嘎嘎大巨大超级大…同样的不能点麻辣，不然鸡肉会发苦很咸，并且铜锅估计是不洗的，但是瑕不掩瑜","同学B：火锅鸡得快点吃 吃久了鸡肉发苦 锅有股味道"],"w":0},{"e":"🐔","n":"新疆大盘鸡 ⚠️ 避雷","d":"汤浓土豆软烂好吃，但地沟油传闻需警惕","p":"未提及","l":"校外","r":"3.0","cm":["同学A：新疆大盘鸡之类的就是汤很浓郁然后土豆炖的软烂，如果是拌面或者拌饭的话非常好吃","同学B：大盘鸡最好少吃 在重邮这么久了总能看见拉地沟油的进他们店里 以前用的五得利面粉 现在用的不知道什么面粉 比较难吃"],"w":1},{"e":"🍜","n":"面馆系列 · 风四娘面庄","d":"学校附近最好吃的小面，加煎蛋更绝","p":"未提及","l":"校外","r":"4.7","cm":["同学A：风四娘面庄，重庆小面的最好吃的一家","同学B：香的加个煎蛋，算是学校附近最好吃的一家小面了"],"w":0},{"e":"🍜","n":"面馆系列 · 苗妹面庄","d":"老店，炒菜比面好吃","p":"未提及","l":"校外","r":"4.3","cm":["同学A：苗妹面庄，虽然是面馆但是炒菜好吃，是老店，炒菜比面好吃"],"w":0},{"e":"🍜","n":"面馆系列 · 呼啦面馆","d":"便宜干净","p":"便宜","l":"校外","r":"4.4","cm":["同学A：校外呼啦面馆（便宜干净）"],"w":0},{"e":"🍜","n":"面馆系列 · 白鹿原（西安面）","d":"外卖不错但巨油偏贵","p":"偏贵","l":"校外","r":"3.9","cm":["同学A：白鹿原我就点过外卖，感觉味道还不错","同学B：白鹿原，西安的面，巨油比较贵，吃完油腻一天，但是如果没吃过可以试一下"],"w":0},{"e":"🍜","n":"面馆系列 · 万州酱香园面馆","d":"料多浇头现炒，但人多桌子小","p":"未提及","l":"校外","r":"4.4","cm":["同学A：万州酱香园面馆，料极其多，油腻但是浇头是现炒的并且面很好吃，唯一缺点油店内人很多桌子小"],"w":0},{"e":"🍜","n":"面馆系列 · 新疆大盘鸡拌面（两家）","d":"兰州拉面的\"上位平替\"，认准崇文门对面那家","p":"未提及","l":"崇文门对面（更干净那家）","r":"4.4","cm":["同学A：我推荐兰州拉面上位平替，两家新疆大盘鸡拌面，新疆的就是比兰州的劲道好吃，崇文门对面新疆大盘鸡拌面那家干净一点"],"w":0},{"e":"🍜","n":"面馆系列 · 中原面馆","d":"贼贵，味道非常正常","p":"20/碗","l":"校外","r":"3.2","cm":["同学A：中原面馆，贼贵二十一碗面，就非常正常的味道"],"w":0},{"e":"🍜","n":"面馆系列 · biangbiang面 / 阿理饸饹面 / 川川面庄 / 友谊面庄 / 新派牛肉面 / 兰州拉面（各店）","d":"中规中矩系列（详见附表）","p":"未提及","l":"校外","r":"3.8","cm":["同学A：biangbiang面味道正常但是吃完嘴里一股蒜味，很不爽；阿理饸饹面估计也是吃完有蒜味","同学B：友谊面庄之类的反正就是那些棚子…正常味道但是营业很晚 晚上十点多可以当宵夜，价格跟店铺的一样（凉面甜辣口有点甜）","同学C：川川面庄，正常味道；新派牛肉面刚开业就把我朋友坑了我没敢去；校外兰州拉面，基本味道都一样"],"w":0},{"e":"🍚","n":"夜宵摊 · 糟辣椒炒饭","d":"贵州辣椒风味，但米饭是\"科技米\"","p":"15 左右","l":"崇文门对面（约十点出摊）","r":"4.0","cm":["同学A：糟辣椒炒饭，米饭是科技米，有贵州辣椒风味给到一个夯。价格微贵15左右路边摊"],"w":0},{"e":"🍚","n":"夜宵摊 · 江油炒饭","d":"分量大，肉丝饭好吃（肥肠饭已下架）","p":"未提及","l":"崇文门对面夜宵摊","r":"4.3","cm":["同学A：江油炒饭分量挺大，之前有肥肠饭现在好像只卖一些肉丝饭我吃过感觉好吃"],"w":0},{"e":"🍗","n":"夜宵摊 · 临榆炸鸡腿","d":"可配炒饭，但品控一般","p":"未提及","l":"崇文门对面夜宵摊","r":"3.9","cm":["同学A：临榆炸鸡腿晚上可以买鸡肉条，不过品控一般了我感觉吃了之后会窜，但是我还是会选择炸鸡加炒饭组合"],"w":0},{"e":"🍲","n":"夜宵摊 · 麻辣烫","d":"比学校便宜","p":"19.8/斤","l":"崇文门对面夜宵摊","r":"4.3","cm":["同学A：麻辣烫比学校便宜19.8一斤"],"w":0},{"e":"🍲","n":"夜宵摊 · 牛羊杂","d":"味道好没怪味，老板称重","p":"18/大份（约200g）","l":"崇文门对面夜宵摊","r":"4.5","cm":["同学A：牛羊杂，18块钱大份，味道很好没有怪味，量也还行200g老板会称重"],"w":0},{"e":"🍜","n":"夜宵摊 · 巷遇烤冷面","d":"芝士火鸡面烤冷面，人气排队王","p":"16","l":"崇文门对面夜宵摊","r":"4.6","cm":["同学A：巷遇烤冷面，给到夯，16块钱芝士火鸡面烤冷面直接结束罪恶的一生热量拉满，价格比老家贵但是很值，属于是味道巨好的","同学B：基本每时每刻都在排队一次做十几二十张"],"w":0},{"e":"🍢","n":"夜宵摊 · 巷子里炸豆腐","d":"\"好吃到爆\"，北方麻辣串风味","p":"未提及","l":"崇文门对面夜宵摊","r":"4.6","cm":["同学A：巷子里炸豆腐，上学期马上要倒闭了，这次秽土转生，我只能说巨好吃好吃到爆了，炸豆腐加泡菜…是北方麻辣串麻辣拌的那种油炸物"],"w":0},{"e":"🍚","n":"夜宵摊 · 泰式打抛饭 / 鸡蛋灌饼 / 新疆烤包子烤馕","d":"夜宵系列其他档口","p":"5-未提及","l":"崇文门对面夜宵摊","r":"4.0","cm":["同学A：泰式打抛饭…看着卖相挺好的评论区可以推荐一下；鸡蛋灌饼，油多，很咸，需要让他口味轻一点，好吃不贵；新疆烤包子烤馕，我吃过最少五十次了，馕和包子都是五块钱"],"w":0},{"e":"🥟","n":"校门口肠粉","d":"味道还行","p":"未提及","l":"校门口","r":"4.2","cm":["同学A：学校门口有一家还行"],"w":0},{"e":"🍜","n":"校门口螺蛳粉（两家）","d":"味道不错","p":"未提及","l":"校门口","r":"4.3","cm":["同学A：去学校外面吃吧，校门口有两家味道还不错"],"w":0},{"e":"🥘","n":"自助餐 · 重庆牛肉自助榜单（9 家）","d":"楼主吃一两百次自助后的性价比排名","p":"50-200+","l":"重庆各区","r":"4.5","cm":["同学A：牛肉自助性价比口味排序：陈记勇敢牛牛＞御厨＞鲜牛捞＞谢有财＞张记牛氏辈＞旺和牛＞辉哥牛肉自助＞黎叔叔＞桌小妖；如果没吃过的可以直接按榜单吃，绝对非常惊艳"],"w":0},{"e":"🥘","n":"自助餐 · 重庆烤肉自助榜单（14 家）","d":"榜首林腾腾","p":"50-200+","l":"重庆各区","r":"4.5","cm":["同学A：烤肉性价比口味自助：林腾腾＞千山渡＞魂斗牛＞肉你好＞唐十九＞八月秋风＞山河烧肉屋＞崔壮壮＞空海＞善良先生＞尹珍珠（因三顺阿亲家）＞自助烤串＞碳烤麻里＞焰江山"],"w":0}],"takeaway":[{"e":"🍲","n":"味然鲜","d":"室友最爱，复购率极高，冒菜也好评","p":"未提及（多平台比价更便宜）","l":"腾飞门出去右手边（线下店）","r":"4.7","cm":["同学A：味然鲜是我和室友最爱吃的，点了很多次","同学B：味然鲜！（麻辣烫冒菜帖推荐）","同学C：味鲜然冒菜也可以"],"w":0},{"e":"🍚","n":"麦兜乐黄焖鸡 · 瓦香鸡","d":"外卖比堂食好吃，回购无数次","p":"未提及","l":"外卖（美团/淘宝闪购均可点）","r":"4.8","cm":["同学A：他的瓦香鸡外卖巨巨巨好吃，鸡肉是炒的然后油跟老油一样非常香，很多我之前在宿舍经常点，但是店内就正常口味了外卖反而更好吃","同学B：兜麦乐😋 夯爆了，超级好吃","同学C：我已回购无数次"],"w":0},{"e":"🍜","n":"翎螺小馆（螺蛳粉）","d":"螺蛳粉首选，有田螺但辣","p":"未提及（淘宝闪购常有优惠券）","l":"校外/外卖","r":"4.6","cm":["同学A：螺蛳粉我和我朋友经常吃的是翎螺小馆，大家点外卖的话可以多平台对比一下，有时候淘宝闪购会有优惠券很便宜","同学B：这个真的好吃，就是太辣了里面还有田螺","同学C：学校外的翎螺小馆好吃；你可以试试翎螺小馆的，我觉得比肥姨妈好吃😋"],"w":0},{"e":"🍜","n":"螺二哥 / 一只螺（螺蛳粉）","d":"螺二哥第一，一只螺第二","p":"未提及","l":"外卖","r":"4.4","cm":["同学A：感觉螺二哥最好吃，其次一只螺"],"w":0},{"e":"🌶️","n":"火冒三丈（冒菜）","d":"\"不知道吃啥就点它\"，冒菜口碑王","p":"未提及","l":"外卖","r":"4.7","cm":["同学A：火冒三丈真的好好吃。。。","同学B：火冒三丈 不知道吃啥我就点 室友推荐给我的真的巨好吃","同学C：火冒三丈干拌（干拌口味也好）"],"w":0},{"e":"🍛","n":"美奇客（多国料理）","d":"咖喱猪排饭被反复点名，芝士饭要堂食","p":"未提及","l":"外卖/堂食","r":"4.6","cm":["同学A：美奇客多国料理 咖喱鸡肉饭很好吃 咖喱味很香","同学B：我觉得咖喱猪排饭就很不错。披萨也可以，但因为是现做所以出餐慢。芝士饭还是要到店里吃新鲜出炉的才够劲","同学C：毫无疑问美奇客猪排咖喱饭（两次强调推荐）"],"w":0},{"e":"🌶️","n":"江西小炒","d":"超好吃，招牌菜阵容豪华","p":"未提及","l":"外卖","r":"4.7","cm":["同学A：江西小炒，超好吃👍；江西小炒一定要试试呀","同学B：牛筋肉炒毛肚特别好吃，还有农家一碗香点过好多次了","同学C：我点的小炒黄牛肉加笋尖的那个，洋葱比较多，不喜欢洋葱的要注意，有点辣…味道还可以"],"w":0},{"e":"🍚","n":"食八方小炒馆","d":"招牌菜多，淘宝闪购可搜","p":"未提及","l":"外卖（淘宝闪购）","r":"4.6","cm":["同学A：食八方小炒馆的水煮肉片好吃😋","同学B：食八方小炒馆的辣椒炒肉和水煮肉片很好吃，还有一个蘸水菜也好吃","同学C：已经找到，淘宝闪购搜索食八方，味道很好，酸辣土豆丝，还有农家一碗香味道很好很下饭"],"w":0},{"e":"🍲","n":"乡村鲜鸡汤","d":"最美味的小炒菜，比彩蝶轩好吃","p":"适中","l":"外卖/线下","r":"4.6","cm":["同学A：乡村鲜鸡汤，我觉得是最美味的一家小炒菜，在我心中比彩蝶轩好吃，价格也比较合适，就是分量不大","同学B：乡村鲜鸡汤的那个鲜椒牛肉好吃","同学C：主打的也是家常菜啦（想吃鸡汤饭可点汤类）"],"w":0},{"e":"🌶️","n":"渝湘人家","d":"三道招牌菜都好吃","p":"未提及","l":"外卖","r":"4.5","cm":["同学A：渝湘人家的炒合菜，小炒黄牛肉，尖椒肉丝都还挺好吃的"],"w":0},{"e":"🥘","n":"外婆菜","d":"\"命中天选\"，下饭神器","p":"未提及","l":"外卖","r":"4.6","cm":["同学A：外婆菜便是我的命中天选！咸香入味，鲜爽适口，初食如登仙境，再食便魂牵梦萦","同学B：交出你的外婆菜top1，我先来，番茄炒蛋","同学C：我觉得肉末茄子好吃😋 尖椒鸡，辣椒炒肉，香酥鸡排！！"],"w":0},{"e":"🦢","n":"小田卤鹅","d":"天天吃的卤味口碑款","p":"未提及","l":"外卖","r":"4.5","cm":["同学A：小田卤鹅 天天吃","同学B：小田卤鹅 味道还不错就是肉少一点"],"w":0},{"e":"🍚","n":"大米小面 / 大米小米 / 奇味干锅","d":"被多次推荐（两家店注意区分）","p":"未提及","l":"外卖（有堂食）","r":"4.4","cm":["同学A：大米小面，奇味干锅（推荐）","同学B：嬢嬢汤圆，擂饭，大米小米，川香餐馆（大米小米与大米小面是两家）","同学C：干锅我觉得有点咸（干锅类通用提醒）"],"w":0},{"e":"🍲","n":"重庆江湖特色菜（观音桥）","d":"好吃但只能送到校门口","p":"未提及","l":"观音桥（外卖送到校门口）","r":"4.3","cm":["同学A：如果去校门口拿外卖的话，有个重庆江湖特色菜好吃","同学B：是外卖，在观音桥那边，只能配送到校门口"],"w":0},{"e":"🏠","n":"宏盛餐馆","d":"不知道吃什么时的\"惊喜盲盒\"","p":"未提及","l":"外卖","r":"4.4","cm":["同学A：宏盛餐馆，当你不知道吃什么的时候过去看看绝对会有惊喜"],"w":0},{"e":"🍚","n":"擂饭 / 嬢嬢汤圆 / 筷乐到家 / 川香餐馆","d":"湖南风味与甜品系列","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：有的兄弟有的，擂饭，老太婆蛙，筷乐到家","同学B：嬢嬢汤圆，擂饭，大米小米，川香餐馆"],"w":0},{"e":"🍗","n":"校内肯德基（兴业苑食堂内）","d":"学校最好吃，除了贵没缺点","p":"较贵","l":"兴业苑食堂","r":"4.6","cm":["同学A：最好吃的是学校里的肯德基，除了贵没有缺点","同学B：不如黑汉堡（少数不同意见）"],"w":0},{"e":"🍔","n":"黑汉堡","d":"被认为比肯德基好","p":"未提及","l":"外卖","r":"4.5","cm":["同学A：不如黑汉堡（对比肯德基）","同学B：黑汉堡在外卖推荐帖中再次被提及"],"w":0},{"e":"🍔","n":"汉堡系列 · 怪兽汉堡 / 牛约堡 / 菠萝汉堡 / 黑椒鸡排饭-小烤肉","d":"汉堡类推荐合集","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：怪兽汉堡（推荐帖）","同学B：牛约堡也好吃不过有点贵","同学C：热量炸弹，菠萝汉堡震撼美味，远超一众连锁店"],"w":0},{"e":"🍗","n":"故里炸鸡 / 李二妹烧烤 / 烧烤系列","d":"炸鸡烧烤夜宵系列","p":"未提及","l":"外卖","r":"4.2","cm":["同学A：故里炸鸡（推荐帖）","同学B：李二妹烧烤，感觉是炭火烤的，很好吃，但是有点辣，而且很多都是冻货，不过可以一试"],"w":0},{"e":"🍲","n":"小鱼儿麻辣烫 / 每味每客 / 遇见麻辣烫","d":"麻辣烫类推荐","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：小鱼儿麻辣烫（推荐帖+麻辣烫帖两次提名）","同学B：每味每客也还不错"],"w":0},{"e":"🍚","n":"老太婆美蛙饭 · 尖椒美蛙","d":"尖椒口味被推荐","p":"未提及","l":"外卖","r":"4.4","cm":["同学A：老太婆尖椒美蛙饭（推荐帖）"],"w":0},{"e":"🏪","n":"陕西人家 / 山城大排档 / 天香饭庄 / 味汁源 / 牛肉系列","d":"正餐外卖推荐合集","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：陕西人家，山城大排档（推荐帖）","同学B：天香饭庄的爆炒腰花，铁板里脊，蒜泥白肉都还可以，味汁源的鱼香茄子超级无敌好吃"],"w":0},{"e":"🍲","n":"沁源干锅脆皮鸡 / 干锅焖饭 / 奇味干锅","d":"干锅系列（偏咸提醒）","p":"未提及","l":"外卖","r":"4.2","cm":["同学A：沁源干锅脆皮鸡（推荐帖）","同学B：总有一天你会吃的干锅闷饭 小龙坎 来的快","同学C：干锅我觉得有点咸"],"w":0},{"e":"🍲","n":"小龙坎（外卖）/ 好大一碗鲜烧饭 / 古香缘老火锅","d":"火锅味外卖系列","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：那还说啥，古香缘老火锅，除了不能用券，想吃火锅的时候吃简直不要太爽","同学B：好大一碗鲜烧饭也还可以"],"w":0},{"e":"🥟","n":"军屯锅盔 / 靖远炒肉片 / 重庆鸡公煲·梅干菜鸡爪","d":"小吃与特色系列","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：军屯锅盔，靖远炒肉片（推荐帖）","同学B：重庆鸡公煲的梅干菜鸡爪（推荐帖）"],"w":0},{"e":"🍚","n":"大米先生 / 川三柏鸡公煲 / 大叔烤冷面","d":"快餐系列","p":"未提及","l":"外卖","r":"4.1","cm":["同学A：大米先生 擂饭（推荐帖）","同学B：那个什么大叔烤冷面还还行吧（一般水准）"],"w":0},{"e":"🌶️","n":"花小小新疆炒米粉 / 疆粉儿","d":"新疆炒米粉类","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：花小小新疆炒米粉，解馋工坊，小龙门，外婆菜，大米小面，牛小匠（推荐帖）"],"w":0},{"e":"🍲","n":"福鼎肉片（外卖）","d":"肉超多不辣，配送进校需确认","p":"未提及","l":"外卖","r":"4.5","cm":["同学A：福鼎肉片，肉肉超多，而且不辣，口味宣美😋（堕落街同款好评）","同学B：这个能配送进校吗？我问商家他说要问骑手"],"w":0},{"e":"🥗","n":"蘸水菜","d":"减脂友好","p":"未提及","l":"外卖","r":"4.4","cm":["同学A：吃蘸水菜（减脂推荐）；还有一个蘸水菜也好吃"],"w":0},{"e":"🍜","n":"Spizza 速递 / 上岸凉皮 / 糖醋凉面","d":"特色外卖系列","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：Spizza速递奥尔良鸡肉披萨亚米亚米","同学B：上岸凉皮也好吃","同学C：拼好饭有个糖醋凉面，我感觉有点芥末味也还不错"],"w":0},{"e":"🥟","n":"福建千里香馄饨 / 七里香福建馄饨（堕落一街）","d":"馄饨和粥巨好吃（注意两家区分）","p":"未提及","l":"外卖/堕落一街","r":"4.4","cm":["同学A：福建千里香馄香馄饨，馄饨和粥巨巨巨好吃","同学B：堕落一街七里香福建馄炖（被推荐）；另一人吐槽\"咸死了\"（个人口味待验证）"],"w":0},{"e":"🍜","n":"彭拾柒羊肉粉 / 无骨烤鱼饭 / 暮村","d":"特色外卖系列","p":"未提及","l":"外卖","r":"4.3","cm":["同学A：彭拾柒羊肉粉，无骨烤鱼饭（推荐帖，两帖累计）","同学B：暮村的炒三花和尖椒鸡（推荐帖）"],"w":0},{"e":"🍱","n":"手撕爽口热拌鸡 / 箐青荷叶烤鸡（重邮店）⚠️ 卫生警示","d":"有下单记录但\"一号位/二号位\"卫生疑云待确认","p":"13-16","l":"淘宝闪购","r":"3.0","cm":["同学A：一号位没尝过，二号位慎重一点，我之前也吃过，后来听说实体店卫生有点恐怖","同学B：之前贴吧看到的（消息来源）；看来要避雷了"],"w":1},{"e":"🍢","n":"美食街外卖优选（地图标注系列）","d":"美食街外卖集中区","p":"未提及","l":"美食街","r":"4.2","cm":["同学A：超级大碗、烧烤金饭、茶百道、新疆炒米粉、老坛四鲜米线、老友粉、一只酸奶牛、塔斯汀、乡村基、老地方正宗万州烤鱼（\"老地方白月光 绝绝子\"）等（地图标注\"外卖优选\"）"],"w":0},{"e":"🥗","n":"蔓味轻食 ⚠️ 避雷","d":"多人差评：\"千万别点\"","p":"未提及","l":"外卖","r":"1.5","cm":["同学A：千万别点蔓味轻食........","同学B：他那个贝贝南瓜都不粉","同学C：已经点过了 难吃……"],"w":1},{"e":"🍔","n":"手做牛肉汉堡 ⚠️ 避雷","d":"卫生硬伤：掉地汉堡捡回重卖","p":"未提及","l":"外卖","r":"1.0","cm":["同学A：有一次我在汉堡店看见汉堡掉地上被老板直接捡起来，又重新打包，然后当外卖又拿给别人吃了","同学B：叫什么手做牛肉汉堡什么玩意儿"],"w":1},{"e":"🥗","n":"麦享瘦·轻食（重邮店）⚠️ 避雷","d":"钢丝球异物+变质鸡肉，商家拒赔","p":"20.8（无油蜜汁鸡腿黑米饭碗）","l":"外卖","r":"1.0","cm":["同学A：点轻食外卖吃出钢丝球，商家自己承认是洗锅钢丝球残留…沟通时商家说下次赔付一份（大哥，谁还会再想吃你家东西啊），后面说走平台食品安全保险，不愿承担法定赔偿责任","同学B：这家店有一次那个鸡肉还是放坏了了，咬一口给我臭吐了，太恶心了，从那之后再没去过了","同学C：之前点过一次味道是真的难评"],"w":1}]};
+let foodTab='canteen',canteenFilter='全部';
+
+/* ===== 规划板块数据（来源：重邮官网及公开资料整理——各学院专业设置、《本科生转专业管理办法》、2023届毕业生就业质量报告、学长学姐经验综合） ===== */
+const PLAN_COLLEGES=[
+  {short:'通信学院',icon:'📡',name:'通信与信息工程学院',mode:'大类招生 · 前两年大类培养后分流',majors:'通信工程 · 电子信息工程 · 信息工程',note:'重邮王牌学院，通信工程为国家级特色专业，5G/6G、光通信方向就业面最宽',tags:['国家级特色专业','就业大户']},
+  {short:'计算机学院',icon:'💻',name:'计算机科学与技术学院 / 人工智能学院',mode:'大类培养后分流',majors:'计算机科学与技术 · 智能科学与技术 · 数据科学与大数据技术',note:'计算机科学与技术为国家级特色专业；人工智能学院与科大讯飞共建，产教融合培养AI人才',tags:['国家级特色专业','讯飞共建']},
+  {short:'自动化学院',icon:'🤖',name:'自动化学院',mode:'按专业招生',majors:'自动化 · 电气工程及其自动化 · 物联网工程 · 机器人工程',note:'控制科学与工程学科评估B-；华为ICT学院合作单位，自动化是华为在渝招聘主力学院之一',tags:['学科评估B-','华为ICT学院']},
+  {short:'光电学院',icon:'💡',name:'光电工程学院',mode:'按专业招生',majors:'光电信息科学与工程 · 电子科学与技术 · 微电子科学与工程',note:'光通信、集成电路方向，对口半导体与光电产业',tags:['芯片方向']},
+  {short:'经管学院',icon:'📊',name:'经济管理学院',mode:'按专业招生',majors:'信息管理与信息系统 · 电子商务 · 市场营销 · 金融学',note:'拥有管理科学与工程一级学科博士点，"经管+信息技术"复合培养',tags:['博士点']},
+  {short:'理学院',icon:'🧮',name:'理学院',mode:'按专业招生',majors:'数学与应用数学 · 信息与计算科学 · 应用物理学',note:'开设通信工程+应用物理学双学士学位复合型人才培养项目',tags:['双学士学位']},
+  {short:'外国语学院',icon:'🌍',name:'外国语学院',mode:'按专业招生',majors:'英语 · 翻译',note:'"外语+ICT"特色培养，语言与信息技术结合',tags:['外语+ICT']},
+  {short:'生信学院',icon:'🧬',name:'生命健康信息科学与工程学院',mode:'按专业招生',majors:'生物医学工程 · 智能医学工程',note:'生命健康与信息科学交叉学科，医工融合方向',tags:['医工交叉']}
+];
+const PLAN_GRADES=[
+  {grade:'大一',icon:'🌱',theme:'打地基 · 别挂科',items:['军训适应期：熟悉校园，认识同学和辅导员','守住绩点：高数、大物、程序设计学分最高，是绩点主战场','英语四级 12 月首考，力争一次过','竞选班委 / 加入 1 个学生组织：攒人脉，也攒综测','想转专业的同学：大一成绩是核心筹码','大类培养：一年级末 / 二年级末面临专业分流']},
+  {grade:'大二',icon:'🚀',theme:'定向 · 起加速',items:['英语六级刷高分：保研和求职的硬通货','转专业窗口期：一 / 二年级末可申请，可填两个志愿','进实验室：联系导师参与科创项目','打竞赛：数学建模、互联网+、挑战杯','专业核心课发力：直接决定保研排名']},
+  {grade:'大三',icon:'🎯',theme:'分岔口 · 定去向',items:['保研：6-8 月夏令营报名 + 参营（关键窗口）','考研：寒假启动复习，定院校定专业','实习：争取暑期实习，大厂实习是秋招敲门砖','科研加分：论文 / 专利给保研简历加码','9 月：推免资格综合测评']},
+  {grade:'大四',icon:'🏁',theme:'收官 · 三条路',items:['秋招 9-11 月：全年约 80% 编制岗位集中于此','考研初试：12 月倒数第二个周末','春招 3-4 月：补录与考研失利 Plan B','毕业设计：3-5 月开题到答辩','考研出分：次年 2 月 → 3-4 月复试 / 调剂']}
+];
+const PLAN_PATHS=[
+  {path:'保研 / 推免',icon:'🎓',tl:'大三下 6-8 月：夏令营投递与参营 → 大四 9 月：预推免 + 推免资格测评 → 9 月底：国家推免系统填报确认',tip:'竞争力三件套：绩点排名（专业前列最稳）+ 六级高分 + 竞赛科研加分'},
+  {path:'考研',icon:'📚',tl:'大三寒假：启动复习 → 10 月：网上报名 → 12 月倒数第二个周末：初试 → 次年 2 月出分 → 3-4 月：复试 / 调剂',tip:'重邮本科升学率超 36%，通信、计算机都是热门方向'},
+  {path:'就业',icon:'💼',tl:'大三暑期：实习 → 大四 9-11 月：秋招黄金期 → 次年 3-4 月：春招补录',tip:'2023 届总落实率超 95%；头部雇主：华为、中兴、小米、腾讯、三大运营商'},
+  {path:'考公 / 选调',icon:'🏛️',tl:'10 月中旬：国考报名 → 11 月底：国考笔试 → 次年 1-2 月：重庆市考报名 → 3 月：笔试 → 4-5 月：面试',tip:'通信 / 计算机专业可报岗位面较宽；选调生关注学校就业网通知'}
+];
+let planTab='college',collegeFilter='全部';
+
+/* 猫咪数据 */
+const CATS=[{name:'呆豆',img:'cat_daidou.jpg',emoji:'🐱',breed:'长毛橘猫',color:'#e8932a',pattern:'orange',status:'待领养',desc:'软萌好盘，见人就蹭，碰瓷讨粮一流',loc:'校园后山',likes:156,liked:false},{name:'奶龙',img:'cat_nailong.jpg',emoji:'🐱',breed:'中华田园猫',color:'#d9a441',pattern:'special',status:'待领养',desc:'非常非常亲人的小咪',loc:'明理苑附近',likes:132,liked:false},{name:'二号',img:'cat_erhao.jpg',emoji:'🐱',breed:'狸花猫（虎斑）',color:'#8a7a6a',pattern:'tabby',status:'待领养',desc:'短毛虎斑纹，绿眼睛，面相偏严肃',loc:'教学区草坪',likes:45,liked:false},{name:'黄豆',img:'cat_huangdou.jpg',emoji:'🐱',breed:'橘白猫',color:'#f0a63c',pattern:'orangewhite',status:'待领养',desc:'背头橘色，胸口爪子雪白，圆脸讨喜',loc:'二食堂周边',likes:9,liked:false},{name:'年年',img:'cat_niannian.jpg',emoji:'🐱',breed:'三花猫',color:'#d47',pattern:'calico',status:'护理中',desc:'黑橘白三花，戴伊丽莎白圈护理中',loc:'志愿者寄养中',likes:10,liked:false},{name:'蜜橘',img:'cat_miju.jpg',emoji:'🐱',breed:'橘猫',color:'#f5a623',pattern:'orange',status:'暂不中转',desc:'全橘短毛，爱抬头望天，校园小明星',loc:'中心花坛',likes:4,liked:false},{name:'雪兔',img:'cat_xuetu.jpg',emoji:'🐱',breed:'白猫',color:'#e8e8e8',pattern:'white',status:'待领养',desc:'通体雪白，眼神清澈，安静优雅',loc:'图书馆前',likes:87,liked:false},{name:'小牛',img:'cat_xiaoniu.jpg',emoji:'🐱',breed:'奶牛猫',color:'#5a5a5a',pattern:'cow',status:'待领养',desc:'黑白花纹似小奶牛，活泼好动',loc:'操场看台',likes:63,liked:false},{name:'小玳瑁',img:'cat_xiaodaimao.jpg',emoji:'🐱',breed:'玳瑁猫',color:'#6a4a3a',pattern:'tortoise',status:'待领养',desc:'黑橘斑块相间，眼神温柔',loc:'车库附近',likes:52,liked:false},{name:'奥利奥（二代）',img:'cat_aoliao.jpg',emoji:'🐱',breed:'奶牛猫',color:'#3a3a3a',pattern:'cow',status:'待领养',desc:'黑白配色的二代小猫，古灵精怪',loc:'宿舍区',likes:71,liked:false},{name:'十二橘',img:'cat_shierju.jpg',emoji:'🐱',breed:'橘猫',color:'#ef9a3c',pattern:'orange',status:'待领养',desc:'排行十二的圆滚滚橘猫，干饭积极',loc:'食堂后门',likes:95,liked:false},{name:'汤圆',img:'cat_tangyuan.jpg',emoji:'🐱',breed:'奶白猫',color:'#f2ede4',pattern:'white',status:'待领养',desc:'圆滚滚像颗汤圆，见人翻肚皮',loc:'宿舍楼下花台',likes:143,liked:false},{name:'招财',img:'cat_zhaocai.jpg',emoji:'🐱',breed:'狸花猫',color:'#8a7a6a',pattern:'tabby',status:'待领养',desc:'活泼好动，会翻肚皮求摸',loc:'二食堂门口台阶',likes:112,liked:false},{name:'大橘子（二维码）',img:'cat_dajuzi.jpg',emoji:'🐱',breed:'橘猫',color:'#e8932a',pattern:'orange',status:'待领养',desc:'校园明星橘猫，人见人爱',loc:'校园林荫道',likes:168,liked:false},{name:'香香（加菲猫）',img:'cat_xiangxiang.jpg',emoji:'🐱',breed:'加菲猫',color:'#c9a88a',pattern:'special',status:'待领养',desc:'扁脸加菲，慵懒呆萌',loc:'逸夫楼附近',likes:78,liked:false},{name:'小黑蛋',img:'cat_xiaoheidan.jpg',emoji:'🐱',breed:'黑猫',color:'#2a2a2a',pattern:'black',status:'待领养',desc:'乌黑发亮的小煤球，晚上只看得见眼睛',loc:'快递站旁',likes:64,liked:false},{name:'蓝白',img:'cat_lanbai.jpg',emoji:'🐱',breed:'蓝白猫',color:'#8a9bb5',pattern:'blue',status:'待领养',desc:'蓝灰色被毛配白围脖，气质满分',loc:'明理苑',likes:89,liked:false},{name:'紫金渐层',img:'cat_zijin.jpg',emoji:'🐱',breed:'渐层猫',color:'#b8a37e',pattern:'blue',status:'待领养',desc:'紫金渐层毛色，校园里的高级脸',loc:'宁静苑',likes:58,liked:false}];
+/* 在册猫咪总数（来源：重邮猫咪星球） */
+const CAT_TOTAL=334;
+/* 猫咪照片dHash指纹表（用于识图比对） */
+const CAT_HASHES=[{f:'cat_aoliao.jpg',n:'奥利奥（二代）',h:'d4792ccd993839a9'},{f:'cat_daidou.jpg',n:'呆豆',h:'8646e7f2d38dac49'},{f:'cat_dajuzi.jpg',n:'大橘子（二维码）',h:'833eedbbd3d80cd2'},{f:'cat_erhao.jpg',n:'二号',h:'e672766cfad8e8e0'},{f:'cat_huangdou.jpg',n:'黄豆',h:'aaa3831627279792'},{f:'cat_lanbai.jpg',n:'蓝白',h:'be363b23367262e8'},{f:'cat_miju.jpg',n:'蜜橘',h:'c649989ad2b3b291'},{f:'cat_nailong.jpg',n:'奶龙',h:'47cd3959a6230b09'},{f:'cat_niannian.jpg',n:'年年',h:'f0f0ecf2db4e2cd1'},{f:'cat_shierju.jpg',n:'十二橘',h:'408baa2e170e8eac'},{f:'cat_tangyuan.jpg',n:'汤圆',h:'03caccc68298a8b4'},{f:'cat_xiangxiang.jpg',n:'香香（加菲猫）',h:'b8cc96b783e6f092'},{f:'cat_xiaodaimao.jpg',n:'小玳瑁',h:'ae7efcb8b8b03092'},{f:'cat_xiaoheidan.jpg',n:'小黑蛋',h:'ccece6ccf8eeeebe'},{f:'cat_xiaoniu.jpg',n:'小牛',h:'80bdb2a6c74ba0b1'},{f:'cat_xuetu.jpg',n:'雪兔',h:'aebe7e9b8696f232'},{f:'cat_zhaocai.jpg',n:'招财',h:'816253f1f1e6a696'},{f:'cat_zijin.jpg',n:'紫金渐层',h:'b8a8343232e0a8b0'}];
+/* 花色特征映射表（识图用） */
+const FUR_MAP={orange:{label:'橘猫',cats:['蜜橘','十二橘','大橘子（二维码）','宁橘子','砂糖橘','小橘子（安法）','果冻橙','重橙','丑橘','橘居','橘橘（紫竹）','呆豆']},orangewhite:{label:'橘白猫',cats:['黄豆','59橘白','口炎橘白','黄加白（橘座）','呆豆']},calico:{label:'三花猫',cats:['年年','三花（宾馆）','小三花（南部）']},cow:{label:'奶牛猫',cats:['小牛','奶牛（茶花园）','奶牛（南部）','小奶牛','奥利奥（二代）','花卷（2）']},tabby:{label:'狸花猫',cats:['二号','小狸花','铁梨花','狸豆','狸花（情人坡）','狸花（南部）','狸花（紫竹苑）','不知名狸花','母狸花（宾馆）','招财','513狸花','511狸花']},tortoise:{label:'玳瑁猫',cats:['小玳瑁','小玳瑁（车库）','510长毛玳瑁','歪嘴玳瑁','玳瑁（车库版）','玳瑁（紫竹苑版）']},black:{label:'黑猫',cats:['630黑猫','514黑猫','513长毛黑猫','原点小黑','小黑蛋','老黑','小小黑','黑小乖','夜华','一条黑','长毛黑（二维码）','校医院黑猫猫妈妈']},white:{label:'白猫',cats:['雪兔','小白','528小白','白夜','白花花','汤圆','白开水','白素贞（1）']},blue:{label:'蓝灰系猫',cats:['蓝白','蓝猫（校医院）','蓝猫（宁二）','丑蓝猫','紫金渐层','灰豆']}};
+function roleBadge(cls){const m={stu:['学生','stu'],teacher:['老师','tch'],staff:['教职工','staff']}[cls]||['学生','stu'];return'<span class="prole '+m[1]+'">'+m[0]+'</span>';}
+function showBoard(key){currentBoard=key;const b=BOARDS[key];document.getElementById('homeView').style.display='none';document.getElementById('chatView').style.display='none';document.getElementById('boardView').style.display='flex';document.getElementById('boardIcon').textContent=b.icon;document.getElementById('boardTitle').textContent=b.title;const act=document.getElementById('boardAction');act.textContent=b.action;act.className='board-action'+(b.type==='info'?' alt':'');renderBoard(key);}
+function backHomeFromBoard(){document.getElementById('boardView').style.display='none';document.getElementById('homeView').style.display='flex';currentBoard=null;}
+function renderBoard(key){const body=document.getElementById('boardBody');
+  if(key==='life')body.innerHTML=renderLife(lifePosts,'生活');
+  else if(key==='help')body.innerHTML=renderQA(helpPosts);
+  else if(key==='schol')body.innerHTML=renderSchol();
+  else if(key==='ceping')body.innerHTML=renderCeping();
+  else if(key==='match')body.innerHTML=renderMatch();
+  else if(key==='notice')body.innerHTML=renderNotice();
+  else if(key==='plan')body.innerHTML=renderPlan();
+  else if(key==='cat')body.innerHTML=renderCats();
+}
+/* ===== 生活板块（社区 + 美食推荐参考） ===== */
+let lifeTab='community';
+function renderLife(posts,name){
+  let html='<div class="food-tabs"><div class="ftab'+(lifeTab==='community'?' on':'')+'" onclick="switchLifeTab(\'community\')">🍜 社区</div><div class="ftab'+(lifeTab==='food'?' on':'')+'" onclick="switchLifeTab(\'food\')">🍱 美食推荐</div></div>';
+  if(lifeTab==='community'){
+    html+='<div style="font-size:12px;color:#8aa;margin-bottom:12px">校园'+name+'社区 · 发帖讨论（演示数据）</div>';
+    html+=posts.map((p,i)=>postCard(p,i)).join('');
+    html+=askBar('生活问题也可以直接问我','校车时刻、办事指引、空教室查询都能帮你搞定');
+  }else{
+    html+=renderLifeFood();
+  }
+  return html;}
+function switchLifeTab(tab){lifeTab=tab;showBoard('life');}
+/* 美食推荐（多方收集 · 仅供参考） */
+function renderLifeFood(){
+  const cats=[{k:'canteen',n:'🍜 校内食堂'},{k:'takeaway',n:'🥡 外卖推荐'},{k:'outside',n:'🍻 校外美食'}];
+  let html='<div class="food-chips">'+cats.map(c=>'<span class="fchip'+(foodTab===c.k?' on':'')+'" onclick="foodTab=\''+c.k+'\';canteenFilter=\'全部\';showBoard(\'life\')">'+c.n+'</span>').join('')+'</div>';
+  if(foodTab==='canteen'){const cants=['全部','中心食堂','兴业苑','莘莘','滨湖','阳乐','千喜鹤'];html+='<div class="food-chips" style="margin-bottom:10px">'+cants.map(c=>'<span class="fchip'+(canteenFilter===c?' on':'')+'" onclick="canteenFilter=\''+c+'\';showBoard(\'life\')">'+c+'</span>').join('')+'</div>';}
+  html+=renderLifeFoodList();
+  html+='<div class="food-disclaimer">📌 多方收集 · 仅供参考：整理自QQ频道「重邮大学生活圈」同学真实讨论帖（2026年10月），共 166 条推荐 · ⭐评分为讨论热度与口碑综合估算 · ⚠️ 为多人避雷条目 · 口味因人而异，请以档口当日实际供应为准</div>';
+  return html;}
+function renderLifeFoodList(){
+  let items=FOOD_DATA[foodTab];
+  if(foodTab==='canteen'&&canteenFilter!=='全部')items=items.filter(f=>f.n.indexOf(canteenFilter)===0);
+  if(!items.length)return '<div style="text-align:center;padding:30px;color:#9ab;font-size:13px">暂无相关推荐</div>';
+  return '<div style="font-size:11px;color:#9ab;margin-bottom:10px">共 '+items.length+' 条 · 多方收集仅供参考</div>'+items.map(f=>{
+    let cmtHtml='';if(f.cm&&f.cm.length)cmtHtml=f.cm.slice(0,2).map(c=>'<div class="food-comment"><span class="who">'+esc(c.split('：')[0])+'：</span>'+esc(c.split('：').slice(1).join('：'))+'</div>').join('');
+    const rateCls=parseFloat(f.r)>=4.3?'rate-high':parseFloat(f.r)>=3.5?'rate-mid':'rate-low';
+    
+    return '<div class="food-card'+(f.w?' food-warn':'')+'">'+(f.w?'<div class="food-warn-tag">⚠️ 多人避雷</div>':'')+'<div class="food-top"><div class="food-emoji">'+f.e+'</div><div class="food-info"><div class="food-name">'+esc(f.n)+'</div><div class="food-desc">'+esc(f.d)+'</div><div class="food-meta"><span class="food-loc">📍 '+esc(f.l)+'</span><span class="food-rate '+rateCls+'">⭐ '+f.r+'</span></div></div></div>'+cmtHtml+'</div>';}).join('');}
+/* ===== 选课数据（来源：学长学姐整理《选课表》+《选课参考2025》） ===== */
+const COURSE_DATA={"courses":[{"n":"通信前沿技术","t":"吴大鹏","c":"0.5","tm":"1-4周星期2第9-10节","loc":"2102"},{"n":"音乐鉴赏(Mooc)","t":"刘畅","c":"2.0","tm":"3周,8周,15周星期4第5-6节","loc":"2415","rm":"女神老师","s":1},{"n":"音乐鉴赏(Mooc)","t":"刘畅","c":"2.0","tm":"3周,8周,15周星期3第5-6节","loc":"2315"},{"n":"生活中的物理学","t":"李清旭 朱家骥","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3301"},{"n":"电工电子信息文化基础","t":"黎淼","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2302"},{"n":"宇宙的奥秘","t":"赖昌","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3208","rm":"好过？？？","s":1},{"n":"现代城市生态与环境学","t":"陈婕","c":"2.0","tm":"3周,8周,15周星期2第5-6节","loc":"2202"},{"n":"现代城市生态与环境学","t":"陈婕","c":"2.0","tm":"3周,8周,15周星期2第7-8节","loc":"2302"},{"n":"企业文化与职业素养","t":"杨振国","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2401"},{"n":"礼仪与社会交往","t":"罗琼","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2402"},{"n":"礼仪与社会交往","t":"罗琼","c":"1.0","tm":"9-16周星期2第9-10节","loc":"2102"},{"n":"创意训练理论与实践","t":"高锡荣","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2507"},{"n":"移动互联网思维","t":"袁野","c":"1.0","tm":"3周,8周星期1第5-6节","loc":"2116"},{"n":"新兴电子商务模式分析","t":"蹇洁","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2508"},{"n":"网络与经济","t":"高孝平","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2316","rm":"给分高，考试就只写一个方案，可以网上抄","s":1},{"n":"网络与经济","t":"高孝平","c":"1.0","tm":"9-16周星期2第9-10节","loc":"2115"},{"n":"网络与经济","t":"高孝平","c":"1.0","tm":"9-16周星期2第5-6节","loc":"2102"},{"n":"网络与经济","t":"高孝平","c":"1.0","tm":"1-8周星期2第5-6节","loc":"2401"},{"n":"人生与理财","t":"刘芬","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2415"},{"n":"人生与理财","t":"刘芬","c":"1.0","tm":"1-8周星期1第9-10节","loc":"3304"},{"n":"人生与理财","t":"刘芬","c":"1.0","tm":"9-16周星期1第9-10节","loc":"3304"},{"n":"人生与理财","t":"刘芬","c":"1.0","tm":"9-16周星期2第9-10节","loc":"2201"},{"n":"现代生活中的信息经济","t":"杨波","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3106"},{"n":"创业基础","t":"罗来明","c":"1.0","tm":"3周,8周星期2第9-10节","loc":"2109","rm":"有意义","s":1},{"n":"电子商务创业与实战","t":"姚远","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2410"},{"n":"计算思维之方法学","t":"瞿中","c":"1.0","tm":"2-9周星期2第9-10节","loc":"3401"},{"n":"数据可视化技术","t":"杨富平","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3507"},{"n":"云计算与大数据","t":"张旭","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3506"},{"n":"智能数据分析的行业应用","t":"于洪","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3505"},{"n":"计算机智能科学前沿","t":"王国胤","c":"0.5","tm":"1-4周星期2第9-10节","loc":"2416"},{"n":"软件新技术","t":"钱鹰","c":"2.0","tm":"1-16周星期2第9-10节","loc":"2406"},{"n":"生活中的数学问题","t":"沈世云","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3212"},{"n":"博弈论","t":"陈六新","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3210","rm":"贼难","s":-1},{"n":"应用统计学","t":"李辉","c":"2.0","tm":"1-16周星期2第9-10节","loc":"3211"},{"n":"宽带无线接入网及前沿技术","t":"马彬","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2308"},{"n":"西方礼仪文化","t":"徐豪","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2205"},{"n":"语言幽默艺术","t":"林忠","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2306","rm":"一点都不幽默","s":0},{"n":"语言幽默艺术","t":"林忠","c":"1.0","tm":"9-16周星期2第9-10节","loc":"2308"},{"n":"留学第一课","t":"丁璇","c":"1.0","tm":"3周,8周星期2第9-10节","loc":"2105"},{"n":"留学第一课","t":"丁璇","c":"1.0","tm":"3周,8周星期2第11-12节","loc":"2105"},{"n":"西方文学思潮与作品","t":"史敬轩","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2107"},{"n":"西方经典文学著作选读","t":"史敬轩","c":"1.0","tm":"9-16周星期2第9-10节","loc":"2105"},{"n":"社会研究方法导论（全英文授课）","t":"席仲恩","c":"2.0","tm":"1-16周星期2第9-10节","loc":"2405"},{"n":"韩语语言文化入门","t":"赵寿凤(外聘)","c":"2.0","tm":"1-16周星期2第9-10节","loc":"2206"},{"n":"韩语语言文化入门","t":"赵寿凤(外聘)","c":"2.0","tm":"1-16周星期2第3-4节","loc":"2105"},{"n":"韩语语言文化入门","t":"赵寿凤(外聘)","c":"2.0","tm":"1-16周星期1第9-10节","loc":"2208"},{"n":"化学与现代生活","t":"何从林","c":"2.0","tm":"1-18周星期1第9-10节","loc":"3406"},{"n":"化学与人类","t":"何从林","c":"2.0","tm":"3周,8周,15周星期3第9-10节","loc":"2415"},{"n":"化学与人类","t":"何从林","c":"2.0","tm":"3周,8周,15周星期2第11-12节","loc":"2216"},{"n":"化学与人类文明","t":"何从林","c":"2.0","tm":"3周,8周,15周星期3第7-8节","loc":"2315"},{"n":"化学与人类文明","t":"何从林","c":"2.0","tm":"3周,8周,15周星期2第9-10节","loc":"2216"},{"n":"食品安全与人类健康","t":"陈义文","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3110"},{"n":"环境与生态文明","t":"徐红梅","c":"1.0","tm":"1-8周星期4第5-6节","loc":"2416"},{"n":"生命安全与救援（Mooc）","t":"曾垂省","c":"1.0","tm":"3周,8周星期2第9-10节","loc":"2201"},{"n":"人体与健康生活方式","t":"谢永芳","c":"2.0","tm":"1-16周星期2第9-10节","loc":"3109"},{"n":"化学与人类文明（Mooc）","t":"谢永芳","c":"2.0","tm":"3周,8周,15周星期1第11-12节","loc":"2101"},{"n":"化学与人类文明（Mooc）","t":"谢永芳","c":"2.0","tm":"3周,8周,15周星期1第9-10节","loc":"2416"},{"n":"现代生命科学导论","t":"舒坤贤 梁亦龙","c":"2.0","tm":"1-16周星期4第9-10节","loc":"2401"},{"n":"健康生活 预防癌症(Mooc)","t":"常平安","c":"2.0","tm":"3周,8周,15周星期4第7-8节","loc":"2116"},{"n":"健康生活 预防癌症(Mooc)","t":"常平安","c":"2.0","tm":"3周,8周,15周星期4第9-10节","loc":"2217"},{"n":"环境与生态文明","t":"刘毅","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3205"},{"n":"中医药与中国传统文化（Mooc）","t":"刘毅","c":"2.0","tm":"3周,8周,15周星期5第5-6节","loc":"2115"},{"n":"中医药与中国传统文化（Mooc）","t":"刘毅","c":"2.0","tm":"3周,8周,15周星期5第3-4节","loc":"2116"},{"n":"微生物与人类健康（Mooc）","t":"江怀仲","c":"1.0","tm":"3周,8周星期2第9-10节","loc":"2215"},{"n":"人文与医学","t":"江怀仲","c":"2.0","tm":"3周,8周,15周星期3第9-10节","loc":"2117"},{"n":"食品安全","t":"江怀仲","c":"2.0","tm":"3周,8周,15周星期3第11-12节","loc":"2117"},{"n":"科学探究实验","t":"王允 浦丹","c":"2.0","tm":"1-8周星期5第7-8节","loc":"基础化学实验室（六）一号楼218"},{"n":"科学技术史","t":"王允","c":"1.0","tm":"1-8周星期3第3-4节","loc":"3207"},{"n":"药，为什么这样用?(Mooc)","t":"王允","c":"2.0","tm":"3周,8周,15周星期2第9-10节","loc":"2315"},{"n":"药，为什么这样用?(Mooc)","t":"王允","c":"2.0","tm":"3周,8周,15周星期2第11-12节","loc":"2315"},{"n":"饮食与养生","t":"姚干","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3111"},{"n":"食品安全与日常饮食（Mooc）","t":"姚干","c":"2.0","tm":"3周,8周,15周星期3第9-10节","loc":"2316"},{"n":"食品安全与日常饮食（Mooc）","t":"姚干","c":"2.0","tm":"3周,8周,15周星期3第11-12节","loc":"2115"},{"n":"营养与食疗学","t":"向浏欣","c":"2.0","tm":"3周,8周,15周星期5第5-6节","loc":"2216"},{"n":"营养与食疗学","t":"向浏欣","c":"2.0","tm":"3周,8周,15周星期5第7-8节","loc":"2216"},{"n":"知性女性的幸福人生","t":"刘秀伦","c":"1.0","tm":"3-10周星期1第5-6节","loc":"女子学堂"},{"n":"网络文化与社会发展","t":"何宏兵 范春婷","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3207"},{"n":"西方文明史导论（Mooc）","t":"吴映颖","c":"2.0","tm":"3周,8周,15周星期2第9-10节","loc":"2202"},{"n":"《老》《庄》与道家思想","t":"陈宝剑","c":"1.0","tm":"1-8周星期3第5-6节","loc":"2302"},{"n":"《老》《庄》与道家思想","t":"陈宝剑","c":"1.0","tm":"1-8周星期1第9-10节","loc":"2216"},{"n":"应用文写作","t":"陈宝剑","c":"1.0","tm":"1-8周星期1第3-4节","loc":"2116"},{"n":"中国现代文学名著导读","t":"陈宝剑","c":"2.0","tm":"1-16周星期2第9-10节","loc":"2101"},{"n":"应用文写作","t":"陈宝剑","c":"2.0","tm":"1-16周星期2第5-6节","loc":"2302"},{"n":"书法概论","t":"陈宝剑","c":"2.0","tm":"3周,8周,15周星期3第3-4节","loc":"2410"},{"n":"大学生创业基础","t":"彭语良","c":"1.0","tm":"1-8周星期1第9-10节","loc":"2311","rm":"有意义","s":1},{"n":"大学生创业基础","t":"彭语良","c":"1.0","tm":"1-8周星期1第11-12节","loc":"2311"},{"n":"自我发展与创业指导（Mooc）","t":"彭语良","c":"2.0","tm":"3周,8周,15周星期2第5-6节","loc":"2116"},{"n":"自我发展与创业指导（Mooc）","t":"彭语良","c":"2.0","tm":"3周,8周,15周星期2第7-8节","loc":"2116"},{"n":"大学生创新创业（Mooc）","t":"彭语良","c":"2.0","tm":"3周,8周,15周星期3第5-6节","loc":"2216","rm":"有意义","s":1},{"n":"大学生创新创业（Mooc）","t":"彭语良","c":"2.0","tm":"3周,8周,15周星期3第7-8节","loc":"2216"},{"n":"演讲与口才","t":"杨文胜","c":"1.0","tm":"1-8周星期2第5-6节","loc":"2109","rm":"老师讲的好","s":0},{"n":"大学语文","t":"杨文胜","c":"2.0","tm":"1-16周星期4第5-6节","loc":"3403"},{"n":"普通话规范与演讲","t":"杨文胜","c":"2.0","tm":"1-18周星期3第9-10节","loc":"2308"},{"n":"演讲与口才（Mooc）","t":"杨文胜","c":"2.0","tm":"3周,8周,15周星期2第9-10节","loc":"2108"},{"n":"知识产权基础","t":"何晓行","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2207"},{"n":"电子证据","t":"赵长江","c":"1.0","tm":"1-8周星期2第9-10节","loc":"电子证据实验室(综合实验楼A109/A110)","rm":"技术比较落后了","s":-1},{"n":"黑客产业链之社会工程学","t":"黄永洪","c":"1.0","tm":"1-8周星期3第7-8节","loc":"电子证据实验室(综合实验楼A109/A110)"},{"n":"大数据法律、技术与产业","t":"黄永洪","c":"1.0","tm":"1-8周星期4第5-6节","loc":"电子证据实验室(综合实验楼A109/A110)"},{"n":"网络犯罪解密","t":"王志刚 宋云璇","c":"2.0","tm":"1-16周星期2第9-10节","loc":"3206"},{"n":"诉讼证据的认识与运用","t":"陈飏","c":"2.0","tm":"1-16周星期2第9-10节","loc":"2208"},{"n":"创新创业法律基础","t":"程国徽","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2209"},{"n":"知识产权经典案例评析","t":"白昌前","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2214"},{"n":"应用文写作","t":"陶永莉","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2115"},{"n":"中国现代文学名著导读","t":"陶永莉","c":"2.0","tm":"1-18周星期1第9-10节","loc":"2315"},{"n":"中西诗学比较研究（Mooc）","t":"陶永莉","c":"1.0","tm":"3周,8周星期5第3-4节","loc":"2302"},{"n":"中西诗学比较研究（Mooc）","t":"陶永莉","c":"1.0","tm":"3周,8周星期5第7-8节","loc":"2202"},{"n":"汉魏六朝诗歌与文化","t":"祖秋阳","c":"1.0","tm":"1-8周星期3第5-6节","loc":"2215","rm":"点名","s":-1},{"n":"中华诗词之美（Mooc）","t":"祖秋阳","c":"1.0","tm":"3周,8周星期3第9-10节","loc":"2216"},{"n":"中华诗词之美（Mooc）","t":"祖秋阳","c":"1.0","tm":"3周,8周星期3第7-8节","loc":"2215"},{"n":"伟大的《红楼梦》","t":"祖秋阳","c":"2.0","tm":"3周,8周,15周星期1第5-6节","loc":"2215"},{"n":"伟大的《红楼梦》","t":"祖秋阳","c":"2.0","tm":"3周,8周,15周星期1第9-10节","loc":"3103"},{"n":"语言文字与思维","t":"贾莹","c":"1.0","tm":"1-8周星期4第5-6节","loc":"3505"},{"n":"语言文字与思维","t":"贾莹","c":"1.0","tm":"9-16周星期4第7-8节","loc":"2115"},{"n":"汉语实用表达","t":"贾莹","c":"2.0","tm":"1-16周星期3第5-6节","loc":"2116"},{"n":"魅力高效沟通实战技巧（Mooc）","t":"贾莹","c":"1.0","tm":"3周,8周星期2第5-6节","loc":"2102"},{"n":"演讲口才与公众表达","t":"贾莹","c":"2.0","tm":"3周,8周,15周星期2第3-4节","loc":"2215","rm":"讲得好","s":1},{"n":"古代战争哲学与现代人生","t":"张杰","c":"2.0","tm":"1-16周星期2第9-10节","loc":"2106"},{"n":"古代战争哲学与现代人生","t":"张杰","c":"2.0","tm":"1-16周星期3第7-8节","loc":"2108"},{"n":"瑰丽的唐宋文学艺术","t":"张杰","c":"2.0","tm":"1-16周星期4第5-6节","loc":"2115"},{"n":"瑰丽的唐宋文学艺术","t":"张杰","c":"2.0","tm":"1-16周星期4第9-10节","loc":"2106"},{"n":"美学原理（Mooc）","t":"张杰","c":"2.0","tm":"3周,8周,15周星期2第7-8节","loc":"2215"},{"n":"孙子兵法与战略思维","t":"张杰","c":"2.0","tm":"3周,8周,15周星期3第9-10节","loc":"2116"},{"n":"儒道佛经典与现代人生","t":"费小兵","c":"2.0","tm":"1-16周星期2第9-10节","loc":"2116"},{"n":"大学生创新创业（Mooc）","t":"文铭","c":"2.0","tm":"3周,8周,15周星期4第5-6节","loc":"2316","rm":"有意义","s":1},{"n":"大学生创新创业（Mooc）","t":"文铭","c":"2.0","tm":"3周,8周,15周星期4第7-8节","loc":"2316"},{"n":"智能手机取证","t":"刘波","c":"1.0","tm":"9-16周星期2第9-10节","loc":"电子证据实验室(综合实验楼A109/A110)"},{"n":"计算机犯罪及取证","t":"刘波","c":"1.0","tm":"9-16周星期3第9-10节","loc":"电子证据实验室(综合实验楼A109/A110)"},{"n":"机械原理","t":"邱宝梅","c":"1.0","tm":"1-16周星期2第9-10节","loc":"3402"},{"n":"教师职业与修养","t":"龙承建","c":"2.0","tm":"1-16周星期2第9-10节","loc":"3107"},{"n":"Introduction to Material Science","t":"马崇庚","c":"1.0","tm":"1-8周星期2第9-10节","loc":"2309"},{"n":"影视广告技术与艺术分析","t":"李科","c":"1.0","tm":"9-16周星期2第9-10节","loc":"8121"},{"n":"大学生审美修养","t":"肖雪梅","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3303"},{"n":"大学生审美修养","t":"肖雪梅","c":"1.0","tm":"9-16周星期2第9-10节","loc":"3303"},{"n":"职场心理学","t":"吴媛媛","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3304","rm":"好过，老师好","s":1},{"n":"职场心理学","t":"吴媛媛","c":"1.0","tm":"9-16周星期2第9-10节","loc":"3304"},{"n":"经典影视作品解读","t":"林咏","c":"2.0","tm":"1-16周星期2第9-10节","loc":"8132","rm":"要求很严","s":-1},{"n":"古诗词鉴赏","t":"周磊","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8123"},{"n":"经典影视作品解读","t":"皮海兵","c":"2.0","tm":"1-18周星期2第9-10节","loc":"8133"},{"n":"音乐基础与欣赏","t":"程敬瑜","c":"2.0","tm":"1-16周星期2第9-10节","loc":"8131"},{"n":"新媒体节目形态赏析","t":"靳雪莲","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8143"},{"n":"新媒体节目形态赏析","t":"靳雪莲","c":"1.0","tm":"9-16周星期2第9-10节","loc":"8143"},{"n":"现当代文学鉴赏","t":"张梦婕","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8121"},{"n":"古诗词鉴赏","t":"张梦婕","c":"1.0","tm":"1-8周星期3第9-10节","loc":"8123"},{"n":"音乐赏析","t":"田鑫","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8122"},{"n":"音乐赏析","t":"田鑫","c":"1.0","tm":"9-16周星期2第9-10节","loc":"8122"},{"n":"经典动画技艺分析","t":"李欢欢","c":"1.0","tm":"1-8周星期2第9-10节","loc":"3302"},{"n":"软陶DIY与艺术鉴赏","t":"唐雪莲","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8151","rm":"不好抢","s":-1},{"n":"特效电影制作解密","t":"王芹","c":"1.0","tm":"1-8周星期2第7-8节","loc":"8152"},{"n":"雕塑制作与文化鉴赏","t":"黄力夫","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8144"},{"n":"绘画艺术鉴赏","t":"寇强","c":"1.0","tm":"1-8周星期1第9-10节","loc":"8133","rm":"还行","s":0},{"n":"绘画艺术鉴赏","t":"寇强","c":"1.0","tm":"9-16周星期1第9-10节","loc":"8133"},{"n":"美术作品解读","t":"谢时光","c":"2.0","tm":"1-16周星期4第9-10节","loc":"8132"},{"n":"美术作品解读","t":"谢时光","c":"2.0","tm":"1-16周星期1第9-10节","loc":"8134"},{"n":"中国民间剪纸艺术","t":"陈涛","c":"1.0","tm":"11-18周星期2第9-10节","loc":"3106"},{"n":"创业启蒙与案例分析","t":"齐继东","c":"2.0","tm":"3周,10周,15周星期3第9-10节","loc":"2310"},{"n":"西方文化与动画艺术","t":"钱华欣","c":"1.0","tm":"1-8周星期4第9-10节","loc":"3303"},{"n":"西方文化与动画艺术","t":"钱华欣","c":"1.0","tm":"9-16周星期4第9-10节","loc":"3303"},{"n":"经典影视作品解读","t":"王睿","c":"2.0","tm":"1-16周星期2第9-10节","loc":"8134"},{"n":"电影艺术与文化反思","t":"王侠","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8141"},{"n":"古典名著与电视剧改编","t":"王侠","c":"1.0","tm":"9-16周星期2第9-10节","loc":"3105"},{"n":"中国传统文化与艺术","t":"庞明启","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8124"},{"n":"中国传统文化与艺术","t":"庞明启","c":"1.0","tm":"9-16周星期2第9-10节","loc":"8124"},{"n":"时尚设计与文化创意","t":"钱默","c":"1.0","tm":"1-8周星期2第9-10节","loc":"8142"},{"n":"时尚设计与文化创意","t":"钱默","c":"1.0","tm":"9-16周星期2第9-10节","loc":"8142"},{"n":"电影艺术与文化反思","t":"吴倩","c":"1.0","tm":"1-8周星期3第5-6节","loc":"8143"},{"n":"电影艺术与文化反思","t":"吴倩","c":"1.0","tm":"9-16周星期3第5-6节","loc":"8143"},{"n":"手工DIY创意与制作","t":"高建华","c":"1.0","tm":"1-8周星期2第5-6节","loc":"8133"},{"n":"科技文献检索","t":"彭乙","c":"1.0","tm":"2-9周星期2第3-4节","loc":"2216"},{"n":"科技文献检索","t":"谢叶","c":"1.0","tm":"2-9周星期3第5-6节","loc":"2402"},{"n":"科技文献检索","t":"董广涛","c":"1.0","tm":"2-9周星期4第3-4节","loc":"3207"},{"n":"数学文化","t":"潘建辉","c":"2.0","tm":"1-16周星期2第9-10节","loc":"3209"},{"n":"伦理与礼仪(Mooc)","t":"胡文婕","c":"2.0","tm":"3周,8周,15周星期2第5-6节","loc":"2115"},{"n":"伦理与礼仪(Mooc)","t":"胡文婕","c":"2.0","tm":"3周,8周,15周星期2第7-8节","loc":"2115"},{"n":"演讲与口才","t":"毛萍","c":"1.0","tm":"1-8周星期2第9-10节","loc":"4201"},{"n":"情绪管理（Mooc）","t":"陈敏","c":"1.0","tm":"3周,8周星期4第5-6节","loc":"2315","rm":"好过","s":1}],"refs":[{"n":"融合创新与产品运营","t":"崔亚平","cat":"cross","tn":"好像水水的","cn":"三学分的课，但是好像事情很多"},{"n":"融合创新与产品运营","t":"杨路","cat":"cross"},{"n":"融合创新与产品运营","t":"黄明华","cat":"cross"},{"n":"工程伦理","t":"龙伟","cat":"cross","tn":"第一节课和第二节课之间的休息时间才签到，基本不怎么管，签完就跑的都有，公然抱着电脑来上课的更是一大把，很水/只要上课手机不发出声音就可以了/好人","cn":"期末是开卷考，容易拿高分"},{"n":"工程伦理","t":"刘坤","cat":"cross","tn":"神中神无需多言好人 并且很幽默 也不会管你玩手机什么的 讲课也讲得有趣 思想很开放"},{"n":"工程伦理","t":"付佳","cat":"cross","tn":"老师很和善"},{"n":"工程伦理","t":"尹龙","cat":"cross","tn":"挺好的这个老师，不怎么抽人回答问题，都是秉持自愿原则。玩手机这些也不会管你，有时候会在课上做一个小测试，但是可以用手机搜。基本上没什么作业，分也给的挺高的"},{"n":"工程伦理","t":"杨振国","cat":"cross","tn":"一个有点古板的老头子，学习通上的作业必须要求和课文一字不落，不然会打低分，但是一字不落的话，分数很高。上课偶尔会抽人回答问题，回答错了也没什么关系，整体来说平时分都打得比较高，很水，适合要在水课备考其他的中国宝宝"},{"n":"工程伦理","t":"张世云","cat":"cross","tn":"上课抽人，一学期点名四次，不推荐，平时分打的很低，有小组汇报，打的分更是低，不要选不要选"},{"n":"工程伦理","t":"罗文竹","cat":"cross","tn":"上课的时候完全不管，甚至不下来转，下课爱看点赶海小视频。 上课有时会随机点名但是问题不大，自己ai一下念答案都行，非常松，不好好做作业平时分只给50分"},{"n":"项目管理","t":"杨振国","cat":"cross","tn":"很火爆，难选上/需要专门的书，开卷考也有点烦，受不了的就别选","cn":"要专门买书，期末开卷考"},{"n":"工程管理与经济决策","t":"许慧","cat":"cross","tn":"上课很认真负责，是真的能学到东西。但是每节课都随机点名，让同学做题的时候会下来转，被点起来答题答不出来会被追问","cn":"开卷考"},{"n":"工程管理与经济决策","t":"丁冬","cat":"cross","tn":"最后一节课讲的大题，期末考了/透题怪，最后一节课一定要去听，讲啥考啥，就是平时上课有点煎熬，适合那种真的想学这门课知识的娃儿"},{"n":"工程管理与经济决策","t":"黄蜀江","cat":"cross","tn":"事情很多，有点恐怖，但是上课不怎么管，代签非常方便 外号黄鼠狼，朋友上过，说他很神"},{"n":"工程管理与经济决策","t":"尹龙","cat":"cross","tn":"会提前发签到码"},{"n":"工程管理与经济决策","t":"龙伟","cat":"cross","tn":"偷着乐/好人"},{"n":"工程管理与经济决策","t":"杨振国","cat":"cross","tn":"火爆，难选"},{"n":"工程管理与经济决策","t":"李立平","cat":"cross","tn":"好人，女老师，来晚了可以下课补考勤，上课只在台上不下来转圈"},{"n":"工程管理与经济决策","t":"罗文竹","cat":"cross","tn":"上课的时候完全不管，甚至不下来转，下课爱看点赶海小视频。 上课有时会随机点名但是问题不大，自己ai一下念答案都行，非常松，不好好做作业平时分只给50分"},{"n":"工程管理与经济决策","t":"杨芳","cat":"cross"},{"n":"工程与社会","t":"刘坤","cat":"cross","tn":"神中神无需多言"},{"n":"投资与理财","t":"冯悦旋","cat":"cross","cn":"期末大作业"},{"n":"投资与理财","t":"刘芬","cat":"cross","tn":"笑面虎，平时管的很松，但是期末大作业打分很低。固定座位，不过坐在第1排玩手机也不管，期末大作业必须非常认真写"},{"n":"新媒体营销","t":"梁抒","cat":"cross"},{"n":"技术调研与价值评估","t":"李芮萌","cat":"cross"},{"n":"生活中的复杂网络","t":"李芮萌","cat":"cross"},{"n":"古代战争哲学与现代人生","t":"张杰（双创）","cat":"cross","tn":"宇宙超级无敌水，老师很好，可以听（有内容，不太影响最终考核），课上会随机抽问（不一定有，站起来随便答就行，一节课最多就一两次，总共算下来抽不倒整个班的十分之一），签到有两次，第一节课上课前后。"},{"n":"大学语文","t":"祖秋阳","cat":"cross","tn":"作业不少，除了飞花令还有读书报告，最重要的是，她的课会排固定的位置，不管是想上水课还是喜欢语文课的人，都不是很推荐去，但是她本身文学素养很高，课也讲的不错/期末作业就是自己写一篇鉴赏，平时作业有一个读书报告，飞花令如果你坐后排，有时候一学期下来基本轮不到，就是识典古籍这个网上作业很麻烦，但可以找别人…","cn":"不能接受固定位置的快跑，玩也玩不开心，卷也卷不开心(补：收到的反馈比较两极分化，无法作出拍案定论，请根据前一单元格内容自行分析判断课程是否适合自己）"},{"n":"瑰丽的唐宋文学艺术","t":"张杰（双创）","cat":"cross","tn":"看见这个老师无脑选就可以"},{"n":"大学生创业基础","t":"陈婕","cat":"cross","tn":"老师会提前把你跟其他人分组，你们当中选组长，规定各个组坐的位置，然后只上八周课，期末好像是搞什么路演，属于小组作业那种，老师不许上课打游戏，她说她看见了会没收，刷视频这些应该不管"},{"n":"普通话规范与演讲","t":"杨文胜","cat":"cross","tn":"比较好的老师，上课比较严谨，不推荐想水的来选，老师上课比较有意思，有种高中比较有意思的老师上课的既视感。老老实实上课很容易就能过"},{"n":"生活中的法律","t":"吴英霞","cat":"cross","tn":"签个到就行，老师也不点名，期末写一个2000字的文章就可以，很水。这个老师超级好！签到就行 老师也就在讲台上讲，其实讲的东西也很有意思，也很有用，给分也很不错。无脑选就行","cn":"期末是大作业，不是考试"},{"n":"体适能训练","t":"贺波","cat":"cross","cn":"0.5学分，大号keep体能训练，累累的哦"},{"n":"体适能训练","t":"史晓彬","cat":"cross"},{"n":"中国共产党简史","t":"游岸","cat":"cross","cn":"期末大作业写论文"},{"n":"中国共产党简史","t":"邓庆伟","cat":"cross","tn":"坐后排大胆玩，但是两节课会签两次到，期末作业就是手写论文，比较水"},{"n":"中国共产党简史","t":"张琴","cat":"cross","tn":"水，不是很严，课讲的挺好的"},{"n":"中华人民共和国简史","t":"赵春风","cat":"cross","tn":"阔以//随便旷课，人挺好，给分高","cn":"没有期末考，期中有个大作业，期末有个论文"},{"n":"中华人民共和国简史","t":"冉凌宇","cat":"cross"},{"n":"中华人民共和国简史","t":"李云霄","cat":"cross","tn":"抢到后排大胆玩，坐到前排小心玩，课上点名有点恶心"},{"n":"改革开放简史","t":"徐强（马院）","cat":"cross","tn":"难评。。。最好别选。"},{"n":"改革开放简史","t":"叶高生","cat":"cross","tn":"说话一个字也听不懂。但很水。最后需要做个视频大作业，给分挺高的。"},{"n":"改革开放简史","t":"李海军","cat":"cross","tn":"快跑。/别来，上课还要你做笔记，期末检查，跑的远远的。"},{"n":"改革开放简史","t":"何永林","cat":"cross"},{"n":"改革开放简史","t":"华信辉","cat":"cross","tn":"会抽人回答问题，但是只要张嘴说话就加分，期末大作业的论文一定要注意格式，还有标题，他发现你范低级错误会给你打巨低的分，如果没范就会打好一点的分，主要看格式"},{"n":"社会主义发展简史","t":"李堂","cat":"cross","tn":"快跑。/快跑+1/别来！！！/我同学选的这门，很💩，老师看有几个学生打游戏直接骂了他们一节课，老师选课代表是从签到名单随机挑，快跑！","cn":"有个大作业要写论文，不是期末考"},{"n":"社会主义发展简史","t":"刘昱贤","cat":"cross","tn":"老师很活跃很有意思，他会下来转着偶尔抓人起来回答问题，但是不是那种很严肃的状态不用害怕，怎么答都可以，不管是主动还是被动，回答问题都会给加分"},{"n":"社会主义发展简史","t":"李杨","cat":"cross","tn":"究极无敌好，无脑冲，上课就网上做做题，基本上看视频不会喊你回答，你玩手机是不管的，期末作业是ai的，就是上课时间可能会阴间，有两种时间要么是晚上前两节，要么就是晚上后两节"},{"n":"社会主义发展简史","t":"熊声波","cat":"cross","tn":"快跑。"},{"n":"社会主义发展简史","t":"马丽","cat":"cross","tn":"老师非常好啊，上课基本不怎么管，会反复提醒大作业"},{"n":"社会主义发展简史","t":"刘红梅","cat":"cross","tn":"老师温柔，课上题快截止时候会发答案，所以到时候听一听理论上随堂题能拿满分，但感觉总评有点一般"},{"n":"社会主义发展简史","t":"刘卫花","cat":"cross","tn":"不管，可以玩手机写作业之类的"},{"n":"习近平网络强国重要思想概论","t":"钟星星","cat":"cross"},{"n":"中国特色社会主义政治经济学理论与实务","t":"高孝平","cat":"cross","tn":"老师挺好的，上课一般不太管，只要平时作业认真完成，总分低不了"},{"n":"科技伦理","t":"李杨","cat":"cross","tn":"好像人挺好"},{"n":"古诗词鉴赏","t":"张梦婕","cat":"cross","tn":"很好的老师，抽签给我们送奶茶喝，回答问题也会送奶茶。讲的课很有意思，喜欢古诗词的同学可以直接选！！！最后的作业也很容易完成，老师给分很高的！","cn":"期末大作业"},{"n":"中国传统文化与艺术","t":"曹南南","cat":"cross","tn":"几乎水课，要求低，报的人比较多，记得上课的时候早点去占位置，由于人偏多位置比较重要"},{"n":"音乐基础与欣赏","t":"林庆娜","cat":"cross","tn":"水水的，签完到就跑的人挺多的"},{"n":"音乐基础与欣赏","t":"刘畅","cat":"cross"},{"n":"经典影视作品解读","t":"林咏","cat":"cross","tn":"上课就是看电影，老师放的电影都又经典又好看。每次上课都要签到，上课严查不能玩手机。最后期末会让你写个看电影的观后感啥的。","cn":"期末大作业观后感"},{"n":"时尚设计与文化创意","t":"钱默","cat":"cross","tn":"还行"},{"n":"软陶DIY与艺术鉴赏","t":"唐雪莲","cat":"cross","tn":"好过，有趣，但是很难抢哦","cn":"作业和考核都是软陶作品"},{"n":"生活创意与家居设计","t":"段然","cat":"cross"},{"n":"中国民间剪纸艺术","t":"陈涛","cat":"cross","tn":"不是很水，可以学到东西"},{"n":"大学生审美修养[限仙桃校区]","t":"林庆娜","cat":"cross"},{"n":"大学生审美修养","t":"谭玉龙","cat":"cross","tn":"挺风趣幽默的，上课公然涉及18🚫话题，不怎么管，但是你旷一次被抓到总分扣10分","cn":"期末大作业"},{"n":"大学生审美修养","t":"余佳","cat":"cross"},{"n":"大学生审美修养","t":"林庆娜","cat":"cross"},{"n":"大学生审美修养","t":"陈丹","cat":"cross"},{"n":"职场心理学","t":"吴媛媛","cat":"cross","tn":"老师人好，课水，氛围轻松，考核也松 小学期上课的时候不给补签，但是最后还是高分过"},{"n":"非遗与民间艺术","t":"白玥","cat":"cross","cn":"课上有扎染画画之类的，期末交大报告"},{"n":"摄影","t":"李曼","cat":"cross","cn":"好像要拍摄影作品，似乎有对摄影设备的需求，真喜欢摄影的可以去学学"},{"n":"摄影","t":"刘玉","cat":"cross"},{"n":"摄像技术","t":"刘玉","cat":"cross","tn":"老师正常，有时候要互动，不常点人，可能会有点社死，会让你发自拍，也会有摄像机实操讲解，虽然写的4节连上，但其实是两周线下两周网课交替，平时作业就是两次视频拍摄剪辑，要看学习通","cn":"学习通闭卷，但是抽的都是学习通习题册的题"},{"n":"手工布艺DIY创意与制作","t":"高建华","cat":"cross","tn":"一般，要自己动手做，不推荐/而且老师自己用的缝纫机，但是要求我们手缝。要做的作业很花时间，避雷，除非真的想做手工的","cn":"作业都是手缝的"},{"n":"合唱与指挥","t":"覃巍","cat":"cross","tn":"老师很好，上课干其他事情不会管，但是有时会中途签到抽查人数。平时会练练声唱唱歌，喜欢音乐的直接冲，要交的只有期末两千字论文和期末唱歌和指挥（很简单的，平时就会教，小组自由选歌）","cn":"期末唱歌和指挥+论文"},{"n":"人工智能艺术","t":"吴飞","cat":"cross"},{"n":"中外经典爱情电影赏析","t":"王侠","cat":"cross"},{"n":"插画与绘本艺术","t":"段妍坤","cat":"cross","tn":"人很好"},{"n":"中国古典绘画精讲","t":"毛序竹","cat":"cross"},{"n":"体育影视中的文化透视","t":"吕伟","cat":"cross","tn":"作业要求多，而且是同学评分，可能不太公平"},{"n":"公共艺术赏析","t":"李小川","cat":"cross","tn":"人好，期末给分超级好高，课水，课上只要不吃饭睡觉就行，尽量不要早退，课前和下课时给有一次签到，期末高分过，课上一般没换在干嘛，但是签到要在，上每一章内容的时候挑个几分钟拍照，到时候阶段小考与上课内容有关","cn":"期末大作业，有阶段考核，但是可以轻松完成"},{"n":"公共艺术赏析","t":"张子亮","cat":"cross"},{"n":"教你看懂毕加索—现代艺术精讲","t":"毛序竹","cat":"cross"},{"n":"AIGC 艺术鉴赏：人工智能与未来美学","t":"曹南南","cat":"cross","tn":"老师人好 课很水"},{"n":"创造型思维与方法[限仙桃校区]","t":"杨平安","cat":"cross","tn":"老师比较和善"},{"n":"企业管理基础","t":"张书","cat":"cross"},{"n":"象棋与中国文化","t":"陈宝剑","cat":"cross","tn":"零基础狠狠避雷。老师正常但考核有点恶心，每节课都要线上下棋，最后两周会线下下棋根据排名定部分分。对不了解象棋的人很不友好","cn":"不讲象棋基础，直接下棋，期末线下考试还要解残局，总的来说就是象棋不好有劣势"},{"n":"公文写作","t":"陈宝剑","cat":"cross","tn":"人挺好但是好像偶尔会要求检查笔记"},{"n":"商业计划书写作指导","t":"张书","cat":"cross"},{"n":"语言文字与思维","t":"贾莹","cat":"cross","tn":"挺好的，但是有时候第二节课会点名"},{"n":"人类文明与社会","t":"张挺","cat":"cross"},{"n":"儒学经典","t":"蒋勇","cat":"cross","tn":"很好的老师，抽签给我们送奶茶喝，回答问题也会送奶茶。讲的课很有意思，喜欢古诗词的同学可以直接选！！！最后的作业也很容易完成，老师给分很高的！"},{"n":"高端制造产品智能化创新设计案例","t":"杨杰","cat":"cross"},{"n":"数字文化与创新","t":"贾莹","cat":"cross","tn":"挺好的，但是有时候第二节课会点名"},{"n":"明清小说与文化探秘","t":"庄琳璘","cat":"cross","tn":"速选！超级超级好的老师"},{"n":"旋律中的历史与文化","t":"刘畅","cat":"cross","tn":"很好，老师很好看，上课轻松"},{"n":"音乐聆听与人文阐释","t":"刘畅","cat":"cross","tn":"很好，老师很好看，上课轻松"},{"n":"中国书法之美","t":"招吉韬","cat":"cross"},{"n":"数据分析与量化研究","t":"段思睿","cat":"cross","cn":"要写实验报告哦"},{"n":"云计算与大数据","t":"张渝","cat":"cross","cn":"作业好像有点难度"},{"n":"人工智能","t":"谭宇","cat":"cross"},{"n":"AI通识与实践：从零基础到DeepSeek应用","t":"卢星宇","cat":"cross","cn":"很新的课"},{"n":"现代生命科学导论","t":"侯郑军","cat":"cross"},{"n":"化学与现代生活","t":"钟先华","cat":"cross"},{"n":"人体与健康生活方式","t":"张冰玉","cat":"cross"},{"n":"食品安全与人类健康","t":"张冰玉","cat":"cross"},{"n":"食品安全与人类健康","t":"张文英","cat":"cross","tn":"好像不错"},{"n":"饮食与养生","t":"姚干","cat":"cross","tn":"老师特别好，上课管的很松，不会抽人回答问题，没有小组作业","cn":"课程很轻松，考试很简单，开卷考"},{"n":"环境与生态文明","t":"谭军","cat":"cross"},{"n":"化学与人类文明","t":"向浏欣","cat":"cross"},{"n":"生命科学导论","t":"侯郑军","cat":"cross"},{"n":"自然科学经典导引","t":"王允","cat":"cross"},{"n":"网络安全教育","t":"胡阳雨","cat":"cross"},{"n":"电子数据取证与司法鉴定案例分析","t":"畅君元","cat":"cross","cn":"在南部校区实验楼上课，排课时间有点阴间，要写实验报告，非专业的和不太玩电脑的学生接触起来很费劲，工作量有点大。适合对网络信息安全感兴趣的和法学专业的。闲杂人等听…"},{"n":"电子数据取证与司法鉴定案例分析","t":"刘波","cat":"cross","tn":"老师很温柔，也很专业，上课会互动，但也能接受，其实不是也别管下面，闲的没事可以当八卦听，但是上课愿意听的话是真的可以学到一些东西。但是教的东西对电脑都有点玩不利索的学生很痛苦、"},{"n":"数字时代知识产权概论","t":"郭亮","cat":"cross"},{"n":"物联网技术概论","t":"田辉","cat":"cross"},{"n":"教育大数据","t":"熊余","cat":"cross"},{"n":"数字经济学基础","t":"高孝平","cat":"cross","tn":"老师人挺好的，但是没上过他的这门课"},{"n":"宇宙的奥秘","t":"潘宇","cat":"cross"},{"n":"新能源探秘","t":"段胜楠","cat":"cross"},{"n":"三维建模基础","t":"李欢欢","cat":"cross","cn":"不是很水，期末大作业要建模"},{"n":"国际物流与供应链管理","t":"万粒","cat":"cross"},{"n":"综合英语","t":"丁璇","cat":"lang","tn":"老师很好，管的不严","cn":"基本等于大学英语，期末考闭卷"},{"n":"综合英语","t":"刘世英","cat":"lang"},{"n":"综合英语","t":"吴世银","cat":"lang"},{"n":"综合英语","t":"唐欣玉","cat":"lang"},{"n":"综合英语","t":"牟之渝","cat":"lang","tn":"作业不少，不让玩手机，老抽问，神人"},{"n":"综合英语","t":"陈有梅","cat":"lang","tn":"作业正常，每节课会喊人回答问题，答题给加分"},{"n":"综合英语","t":"钟亚雯","cat":"lang"},{"n":"综合英语","t":"陈萍","cat":"lang","tn":"事很多，更接近初高中状态的英语课，觉得四六级该逼自己一把的可以尝试，但是建议受不了的快跑！"},{"n":"国际职场文化","t":"相启征","cat":"lang","tn":"老师人好，上课甚至可以用中文回答问题，不为难同学/回答问题给加分，问题不是特别难而且允许用中文回答。"},{"n":"国际职场文化","t":"赵勇刚","cat":"lang","tn":"不算特别严，还行/被抓到玩手机会被阴阳"},{"n":"国际职场文化","t":"涂青","cat":"lang"},{"n":"商务交际英语","t":"王庆光","cat":"lang","tn":"挺和蔼的","cn":"期末闭卷考"},{"n":"商务交际英语","t":"郭骞","cat":"lang"},{"n":"商务交际英语","t":"许红梅","cat":"lang"},{"n":"商务交际英语","t":"杨宏波","cat":"lang","tn":"后排玩手机暂时没被说"},{"n":"日语","t":"殷娜","cat":"lang"},{"n":"日语","t":"许艳","cat":"lang"},{"n":"德语","t":"敖海燕","cat":"lang","tn":"老师会请喝啤酒😋 好人 还帮学生找工作"},{"n":"法语","t":"文杰","cat":"lang"},{"n":"实用英语","t":"王阳霞","cat":"lang","tn":"喜欢互动，不让用电子教材"},{"n":"实用英语","t":"刘余","cat":"lang","tn":"课堂有点严，老师人美声甜，作业合理，打分也比较高"},{"n":"实用英语","t":"王红","cat":"lang"},{"n":"实用英语","t":"许杨阳","cat":"lang"},{"n":"实用英语","t":"刘存伟","cat":"lang"},{"n":"国际教育英语（雅思）","t":"唐弢","cat":"lang","tn":"人很好，上过他的必修课，脾气很好很温柔的男老师，会非常认真地鼓励每一个站起来回答问题或者是做展示的学生🥺"},{"n":"国际教育英语（托福）","t":"苑趁趁","cat":"lang"},{"n":"俄语","t":"王迎秋","cat":"lang"},{"n":"西班牙语","t":"冯勤","cat":"lang","tn":"goodgood没有作业的帅帅美女老师 但是会上课开火车回答问题"},{"n":"综合英语（艺体）","t":"杨羚箐","cat":"lang"},{"n":"综合英语（艺体）","t":"丁璇","cat":"lang","tn":"老师很好，管的不严"},{"n":"影视英语与文化（艺体）","t":"夏雨","cat":"lang","tn":"会捞人，学生菜菜，老师捞捞，谢谢"},{"n":"英语公共演讲","t":"张琬悦","cat":"lang","tn":"挺有意思一老师，特爱讲点八卦，但是不太允许玩手机。","cn":"要同时考口语和卷面"},{"n":"英语公共演讲","t":"郑阳芳","cat":"lang","tn":"让很好，允许上课玩手机，讲课也很有意思，分给的比较高"},{"n":"英语公共演讲","t":"雷雪梅","cat":"lang","tn":"要按名单排座位，上课轮流回答问题，有课后作业，还要检查"},{"n":"英语公共演讲","t":"伍喆","cat":"lang"},{"n":"影视英语与文化","t":"彭晓蓉","cat":"lang","cn":"考一些影视相关的单选，不复习有点难，要考阅读，没有听力"},{"n":"影视英语与文化","t":"夏雨","cat":"lang","tn":"感觉还行，上课互动性很强，如果不是奔着玩手机去的话就还不错"},{"n":"影视英语与文化","t":"郑阳芳","cat":"lang","tn":"老师很好哦！很温柔"},{"n":"英国文学经典作品赏析","t":"赵勇刚","cat":"lang","tn":"不算特别严，还行/被抓到玩手机会被阴阳","cn":"应该是有个演讲"},{"n":"英国文学经典作品赏析","t":"蔡培琳","cat":"lang"},{"n":"信息科技英语视听说","t":"刘余","cat":"lang","tn":"课堂有点严，老师人美声甜，作业合理，打分也比较高"},{"n":"信息科技英语视听说","t":"黄潇","cat":"lang","tn":"人挺好的"},{"n":"信息科技英语视听说","t":"钟亚雯","cat":"lang"}]};
+
+/* ===== 帮助板块：答疑社区 + 选课建议 ===== */
+let helpTab='qa';
+function isStudentRole(){return authState.verified?['undergrad','grad','continuing'].includes(authState.roleKey):true;}
+function renderQA(posts){if(helpTab==='course'&&!isStudentRole())helpTab='qa';let html='<div class="food-tabs"><div class="ftab'+(helpTab==='qa'?' on':'')+'" onclick="switchHelpTab(\'qa\',this)">🙋 答疑社区</div>'+(isStudentRole()?'<div class="ftab'+(helpTab==='course'?' on':'')+'" onclick="switchHelpTab(\'course\',this)">📚 选课建议</div>':'')+'</div>';
+  if(helpTab==='qa'){html+='<div style="font-size:12px;color:#8aa;margin:0 0 12px">答疑社区 · 学生提问，老师在线解答'+(currentRole==='teacher'?'（当前为老师身份，可为待解答帖回复）':'')+'</div>';html+=posts.map((p,i)=>postCard(p,i)).join('');html+=askBar('办事问题也可以直接问我','评优条件、奖学金标准、办事入口，基于官方文件精准解答');}
+  else{html+=renderCourseAdvice();}
+  return html;}
+function switchHelpTab(tab,el){helpTab=tab;showBoard('help');}
+/* 选课建议渲染 */
+const CAT_TABS=[{key:'table',name:'📖 通识选修课表'},{key:'cross',name:'🧭 交叉通识课'},{key:'lang',name:'🌍 外语选修'}];
+let courseTabKey='table',courseQuery='';
+function renderCourseAdvice(){let html='<div class="course-search"><input id="courseSearchInput" value="'+courseQuery.replace(/"/g,'&quot;')+'" placeholder="搜索课程名或老师名，如：张杰 / 音乐鉴赏 / 职场心理学…" oninput="courseQuery=this.value;document.getElementById(\'courseListBox\').innerHTML=renderCourseList()"></div>';
+  html+='<div class="food-tabs">'+CAT_TABS.map(t=>'<div class="ftab'+(courseTabKey===t.key?' on':'')+'" onclick="courseTabKey=\''+t.key+'\';showBoard(\'help\')">'+t.name+'</div>').join('')+'</div>';
+  html+='<div id="courseListBox">'+renderCourseList()+'</div>';
+  html+='<div class="course-disclaimer">📌 数据来源：学长学姐整理的《选课表》与《选课参考（2025）》，收录 175 门通识选修课（含真实点评）+ 交叉通识课 / 外语选修评价。评价因人而异，请结合自身需求辩证看待；未收录的课程不代表不好。</div>';
+  return html;}
+function renderCourseList(){const q=courseQuery.trim().toLowerCase();let list=[];
+  if(courseTabKey==='table'){list=COURSE_DATA.courses.filter(c=>!q||c.n.toLowerCase().includes(q)||c.t.toLowerCase().includes(q));
+    if(!list.length)return emptyCourse();
+    let html=list.slice(0,60).map(c=>{const rm=c.rm?'<div class="course-remark remark-'+(c.s>0?'good':c.s<0?'bad':'neutral')+'">💬 学长学姐点评：'+esc(c.rm)+'</div>':'';
+      return '<div class="course-card"><div class="course-head"><div class="course-name">'+esc(c.n)+'</div>'+(c.c?'<div class="course-credit">'+c.c+' 学分</div>':'')+'</div><div class="course-meta">👨‍🏫 '+esc(c.t)+(c.tm?' · 🕐 '+esc(c.tm):'')+(c.loc?' · 📍 '+esc(c.loc):'')+'</div>'+rm+'</div>';}).join('');
+    if(list.length>60)html+='<div class="course-disclaimer">仅显示前 60 条（共 '+list.length+' 门），可用搜索框精确定位</div>';
+    return html;}
+  else{list=COURSE_DATA.refs.filter(r=>r.cat===courseTabKey&&(!q||r.n.toLowerCase().includes(q)||r.t.toLowerCase().includes(q)));
+    if(!list.length)return emptyCourse();
+    return list.map(r=>{const tn=r.tn?'<div class="course-note-label">👩‍🏫 老师怎么样：</div><div class="course-note">'+esc(r.tn)+'</div>':'';
+      const cn=r.cn?'<div class="course-note-label">📖 课程考核：</div><div class="course-note">'+esc(r.cn)+'</div>':'';
+      return '<div class="course-card"><div class="course-head"><div class="course-name">'+esc(r.n)+'</div><div class="course-credit">'+(r.cat==='cross'?'交叉通识':'外语选修')+'</div></div><div class="course-meta">👨‍🏫 '+esc(r.t)+'</div>'+tn+cn+'</div>';}).join('');}}
+function emptyCourse(){return '<div style="text-align:center;padding:34px;color:#9ab;font-size:13px">🔍 没有找到相关课程，换个关键词试试</div>';}
+function postCard(p,i){let a='';if(p.answered&&p.answer)a='<div class="answer-box"><span class="who">'+p.answerBy+'</span>'+(p.answerRole==='teacher'?'<span class="teacher-mark">✔ 老师答疑</span>':'')+'<br>'+p.answer+'</div>';else if(!p.answered&&currentRole==='teacher')a='<button class="reply-btn" onclick="teacherAnswer('+i+')">✍ 作为老师回复</button>';return'<div class="post" onclick="demoToast(\'演示：帖子详情\')"><div class="post-top"><span class="ptag '+p.tagcls+'">'+p.tag+'</span>'+roleBadge(p.role)+'<span style="font-size:12px;color:#8aa">'+p.author+'</span><span class="pview">'+p.views+' 浏览</span></div><h4>'+p.title+'</h4><div class="post-meta"><span class="pr">💬 '+p.replies+' 回复</span><span class="pl'+(p.liked?' liked':'')+'" onclick="event.stopPropagation();postLike(this,'+i+')">'+p.likes+'</span></div>'+a+'</div>';}
+function postLike(el,i){if(!authState.verified){demoToast('🔒 完成身份认证后才能点赞');return;}const posts=currentBoard==='life'?lifePosts:helpPosts;posts[i].liked=!posts[i].liked;posts[i].likes+=posts[i].liked?1:-1;renderBoard(currentBoard);}
+function teacherAnswer(i){helpPosts[i].answered=true;helpPosts[i].tag='已解答';helpPosts[i].tagcls='solved';helpPosts[i].answerBy='你（'+ROLE_META[currentRole].name+'）';helpPosts[i].answerRole=currentRole;helpPosts[i].answer='已收到你的提问，结题顺序建议：先整理结题报告正文 → 附成果证明 → 填经费决算表 → 指导教师签字 → 提交学院审核。';renderBoard('help');demoToast('✔ 答疑已发布');}
+function renderSchol(){return'<div class="info-cards"><div class="icard hl"><div class="ic-head"><span class="lv" style="color:#d9a010">🥇 学业一等</span><span class="money">3000<small> 元</small></span></div><ul><li>名额：2%</li><li>前 10%，≥80 分</li></ul></div><div class="icard"><div class="ic-head"><span class="lv" style="color:#8a94a6">🥈 二等</span><span class="money">2000<small> 元</small></span></div><ul><li>名额：6%</li><li>前 15%，≥78 分</li></ul></div><div class="icard"><div class="ic-head"><span class="lv" style="color:#b0793f">🥉 三等</span><span class="money">1000<small> 元</small></span></div><ul><li>名额：20%</li><li>前 40%，≥75 分</li></ul></div><div class="icard"><div class="ic-head"><span class="lv" style="color:#d9566f">🎓 国家奖学金</span><span class="money">8000<small> 元</small></span></div><ul><li>上级下达名额</li><li>励志奖学金 5000 元</li></ul></div></div><div class="qa-list">'+qaItem('申请学业奖学金需要什么基本条件？')+qaItem('科创文体奖学金怎么评定？')+qaItem('郭长波奖学金的申请条件？')+qaItem('大二可以申请国家奖学金吗？')+'</div>'+askBar('奖学金细则直接问邮宝','基于官方文件精准回答');}
+function renderCeping(){return'<div class="formula-bar"><b>综测成绩构成</b><span class="f">综测 = 德育×10% + 智育×70% + 体育×10% + 美育×5% + 劳动×5% + 学术科创附加分 − 扣分</span></div><div class="info-cards"><div class="icard"><div class="ic-head"><span class="lv" style="color:#4a90d9">德育 10%</span></div><ul><li>基础分 75（自评+互评+辅导员）</li><li>附加分上限 25</li></ul></div><div class="icard"><div class="ic-head"><span class="lv" style="color:#e8862a">智育 70%</span></div><ul><li>权重最高</li><li>与奖学金排名挂钩</li></ul></div><div class="icard"><div class="ic-head"><span class="lv" style="color:#3a9d6a">体育 10%</span></div><ul><li>体测 ≥ 60 分</li><li>竞赛获奖可加分</li></ul></div><div class="icard"><div class="ic-head"><span class="lv" style="color:#7a5fc9">美育+劳动 10%</span></div><ul><li>美育 5% + 劳动 5%</li><li>志愿 ≥ 20 小时</li></ul></div></div><div class="qa-list">'+qaItem('学科竞赛获奖怎么加分？')+qaItem('学术论文发表能加多少分？')+qaItem('志愿服务时长不够会影响评优吗？')+qaItem('扣分项有哪些？')+'</div>'+askBar('综测细节直接问邮宝','基于官方文件逐条解答');}
+function renderMatch(){const races=[{lv:'市级',lvcls:'prov',name:'"天翼AI"杯重庆高校人工智能大赛',sub:'报名截止 9月30日',status:'报名中 🔥',scls:'open',join:'报名'},{lv:'国家级',lvcls:'nat',name:'全国大学生数字媒体科技作品竞赛',sub:'校级选拔',status:'报名中',scls:'open',join:'报名'},{lv:'国家级',lvcls:'nat',name:'华为ICT大赛',sub:'实践/创新双赛道',status:'进行中',scls:'run',join:'查看'},{lv:'市级',lvcls:'prov',name:'重庆市大学生区块链技术应用创新大赛',sub:'校级选拔已启动',status:'进行中',scls:'run',join:'查看'},{lv:'校级',lvcls:'sch',name:'大学生创新创业训练计划（大创）',sub:'全年可申报',status:'报名中',scls:'open',join:'申报'},{lv:'国家级',lvcls:'nat',name:'"挑战杯"创业计划竞赛',sub:'下学期启动',status:'未开始',scls:'pre',join:'提醒我'}];let html='<div style="font-size:12px;color:#8aa;margin-bottom:12px">竞赛日历（演示数据）</div>';html+=races.map(r=>'<div class="race-row"><span class="race-level '+r.lvcls+'">'+r.lv+'</span><div class="race-name">'+r.name+'<small>'+r.sub+'</small></div><span class="race-status '+r.scls+'">'+r.status+'</span><button class="race-join" onclick="demoToast(\'演示：跳转报名入口\')">'+r.join+'</button></div>').join('');html+=askBar('竞赛加分认定问邮宝','省甲/国乙怎么认定、综测加多少');return html;}
+function renderNotice(){const notices=[{d:'28',m:'09月',t:'关于组织参加2026年国际大学生物理竞赛的通知',from:'教务处'},{d:'28',m:'09月',t:'关于2026-2027学年大学体育1线下课安排的通知',from:'教务处'},{d:'24',m:'09月',t:'关于举办重庆市大学生区块链技术应用创新大赛校级选拔赛的通知',from:'教务处'},{d:'23',m:'09月',t:'关于2026-2027学年学籍异动学生选课的通知',from:'教务处'},{d:'21',m:'09月',t:'关于选派学生参加法国巴黎高等电子学院交流项目的通知',from:'教务处'}];let html='<div style="font-size:12px;color:#8aa;margin-bottom:6px">校园通知（演示数据）</div>';html+=notices.map(n=>'<div class="notice-row" onclick="demoToast(\'演示：通知详情\')"><div class="notice-date"><div class="d">'+n.d+'</div><div class="m">'+n.m+'</div></div><div class="notice-title">'+n.t+'</div><div class="notice-from">'+n.from+'</div></div>').join('');html+='<div class="ask-youbao-bar" style="margin-top:22px" onclick="openChatWith(\'帮我写一个社团招新的通知\')">'+ybMini()+'<div class="t">让邮宝帮你写通知/申请/策划/失物招领<small>说一句需求，按公文规范成稿</small></div><span class="go2">›</span></div>';return html;}
+function qaItem(q){return'<div class="qa-item" onclick="openChatWith(\''+q.replace(/'/g,"\\'")+'\')"><span class="q">'+q+'</span><span class="arr">›</span></div>';}
+/* 规划渲染 */
+function renderPlan(){
+  let html='<div class="food-tabs"><div class="ftab'+(planTab==='college'?' on':'')+'" onclick="switchPlanTab(\'college\')">🏛️ 学院专业</div><div class="ftab'+(planTab==='grade'?' on':'')+'" onclick="switchPlanTab(\'grade\')">📅 四年规划</div><div class="ftab'+(planTab==='path'?' on':'')+'" onclick="switchPlanTab(\'path\')">🧭 毕业去向</div></div>';
+  if(planTab==='college')html+=renderPlanCollege();
+  else if(planTab==='grade')html+=renderPlanGrade();
+  else html+=renderPlanPath();
+  html+='<div class="plan-official">🏫 <a href="https://www.cqupt.edu.cn" target="_blank" rel="noopener">重庆邮电大学官网 www.cqupt.edu.cn</a><small>各专业完整培养方案：官网 → 人才培养 / 教务处栏目</small></div>';
+  html+='<div class="plan-disclaimer">📌 数据整理自重邮官网与公开资料：各学院专业设置、《本科生转专业管理办法》、2023 届毕业生就业质量报告 · 具体政策以学校最新文件为准</div>';
+  html+=askBar('规划问题直接问邮宝','大一怎么规划、保研考研时间线、转专业条件');
+  return html;}
+function switchPlanTab(tab){planTab=tab;showBoard('plan');}
+function renderPlanCollege(){
+  const names=['全部'].concat(PLAN_COLLEGES.map(c=>c.short));
+  let html='<div class="food-chips">'+names.map(c=>'<span class="fchip'+(collegeFilter===c?' on':'')+'" onclick="collegeFilter=\''+c+'\';showBoard(\'plan\')">'+c+'</span>').join('')+'</div>';
+  html+='<div style="font-size:11px;color:#9ab;margin-bottom:10px">共 '+PLAN_COLLEGES.length+' 个主要学院 · 点击标签筛选</div>';
+  const list=collegeFilter==='全部'?PLAN_COLLEGES:PLAN_COLLEGES.filter(c=>c.short===collegeFilter);
+  html+=list.map(c=>'<div class="plan-card"><div class="plan-head"><span class="plan-emoji">'+c.icon+'</span><div><div class="plan-name">'+c.name+'</div><div class="plan-mode">'+c.mode+'</div></div></div><div class="plan-majors">🎓 '+c.majors+'</div><div class="plan-note">'+c.note+'</div><div class="plan-tags">'+c.tags.map(t=>'<span>'+t+'</span>').join('')+'</div></div>').join('');
+  return html;}
+function renderPlanGrade(){
+  return PLAN_GRADES.map(g=>'<div class="plan-card"><div class="plan-head"><span class="plan-emoji">'+g.icon+'</span><div><div class="plan-name">'+g.grade+'</div><div class="plan-mode">'+g.theme+'</div></div></div><ul class="plan-list">'+g.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></div>').join('');}
+function renderPlanPath(){
+  let html='<div class="plan-stats"><div class="plan-stat"><b>95%+</b><small>2023届总落实率</small></div><div class="plan-stat"><b>36%+</b><small>本科升学率</small></div><div class="plan-stat"><b>48%+</b><small>本科协议合同就业</small></div></div>';
+  html+=PLAN_PATHS.map(p=>'<div class="plan-card"><div class="plan-head"><span class="plan-emoji">'+p.icon+'</span><div><div class="plan-name">'+p.path+'</div><div class="plan-mode">关键时间线</div></div></div><div class="plan-tl">'+p.tl+'</div><div class="plan-tip">💡 '+p.tip+'</div></div>').join('');
+  return html;}
+
+
+
+/* 猫咪渲染 */
+function stTagHtml(st){const m={'待领养':'<span class="cat-tag sterile">🏡 待领养</span>','暂不中转':'<span class="cat-tag tnr">⏸ 暂不中转</span>','护理中':'<span class="cat-tag notnr">💉 护理中</span>','已领养':'<span class="cat-tag adopted-tag">🏠 已被领养</span>'};return m[st]||m['待领养'];}
+function renderCats(){let html='<div class="cat-top-note"><span>📌 该帖中仅为部分猫咪，详情请见「重邮猫咪星球」</span><button class="id-btn" onclick="openIdentify()">📸 识图找猫</button></div>';
+  html+='<div style="font-size:12px;color:#8aa;margin:0 0 12px">重邮校园在册邮猫 <b style="color:var(--brand)">'+CAT_TOTAL+'</b> 只 · 本页精选展示 · 上传照片即可识别是哪只猫猫</div>';
+  html+='<div class="cat-grid">';
+  html+=CATS.map((c,i)=>{const photo=c.img?'<div class="cat-photo-wrap"><img class="cat-photo" src="cats/'+c.img+'" alt="'+c.name+'" loading="lazy" onerror="this.parentNode.className=\'cat-photo-wrap cat-photo-fallback\';this.parentNode.innerHTML=\'🐱\'"><span class="cat-photo-tag">📸 重邮猫咪星球</span></div>':'<div class="cat-photo-wrap cat-photo-fallback">🐱</div>';
+    return '<div class="cat-card">'+photo+'<div class="cat-head"><div><div class="cat-name">'+c.name+'</div><div class="cat-breed">'+c.breed+'</div></div></div><div class="cat-tags">'+stTagHtml(c.status)+'</div><div class="cat-info-row">'+c.desc+'</div><div class="cat-info-row">常出现：'+c.loc+'</div><div class="cat-like '+(c.liked?'liked':'')+'" onclick="catLike(this,'+i+')">'+(c.liked?'❤':'🤍')+' '+c.likes+'</div></div>';}).join('');
+  html+='</div>';
+  html+='<div style="margin-top:16px;padding:14px;background:#f7fafd;border-radius:12px;font-size:12px;color:var(--text-sub);line-height:1.8">📌 数据来源：微信公众号「重邮猫咪星球」 · 想领养或了解某只猫的完整档案，请前往公众号查看。TNR = Trap-Neuter-Return（捕捉-绝育-放归），是科学管理校园流浪猫的方式。</div>';
+  html+=askBar('猫咪问题直接问邮宝','校园猫咪图鉴、识图找猫、领养信息');
+  return html;}
+function catLike(el,i){CATS[i].liked=!CATS[i].liked;CATS[i].likes+=CATS[i].liked?1:-1;document.getElementById('boardBody').innerHTML=renderCats();}
+/* ===== 识图找猫 ===== */
+function openIdentify(){document.getElementById('photoMask').classList.add('show');resetIdentify();}
+function closeIdentify(){document.getElementById('photoMask').classList.remove('show');}
+function resetIdentify(){document.getElementById('idResult').innerHTML='<div class="id-upload" onclick="document.getElementById(\'photoInput\').click()">📷 点击上传猫咪照片<small>支持 jpg / png / webp · 自动分析毛色特征</small></div>';document.getElementById('photoInput').value='';}
+function onPhotoPick(inp){
+  if(!inp.files||!inp.files.length)return;
+  const img=new Image();const url=URL.createObjectURL(inp.files[0]);
+  img.onload=()=>{URL.revokeObjectURL(url);runIdentify(img);};
+  img.onerror=()=>{URL.revokeObjectURL(url);demoToast('图片加载失败，请换一张试试');};
+  img.src=url;}
+function runIdentify(img){
+  const box=document.getElementById('idResult');
+  box.innerHTML='<div class="id-thinking">'+ybMini()+'<div>⚡ 邮宝识图中…<span class="dots"><i></i><i></i><i></i></span></div><small>正在分析毛色特征，比对 '+CAT_TOTAL+' 只在册猫咪</small></div>';
+  setTimeout(()=>{
+    const hashResult=identifyByHash(img);
+    if(hashResult&&hashResult.best){
+      const hc=CATS.find(cc=>cc.img===hashResult.best.f);
+      if(hc){let hh='<div class="id-ok">✅ 识别成功！这是 <b>'+hc.name+'</b> 🎉</div>';
+        hh+='<div class="id-cat-card"><img class="id-cat-photo" src="cats/'+hc.img+'"><div><div class="cat-name">'+hc.name+'</div><div class="cat-breed">'+hc.breed+' · '+hc.status+'</div><div style="font-size:11px;color:#8aa;margin-top:2px">'+hc.desc+' · 常出现：'+hc.loc+'</div></div></div>';
+        hh+='<div class="id-others">📷 照片特征比对成功 · 匹配距离='+hashResult.dist+'（越小越相似）</div>';
+        hh+='<div class="id-note">🐱 邮宝根据你上传的照片与在册猫咪照片逐一比对，完整档案请见微信公众号「重邮猫咪星球」</div>';
+        hh+='<button class="id-retry" onclick="resetIdentify()">再识别一张</button>';
+        box.innerHTML=hh;return;}
+    }
+    const fur=analyzeFur(img);
+    if(!fur){box.innerHTML='<div class="id-fail">😿 未找到此猫咪哦~</div><div class="id-fail-sub">可能的原因：照片里不是猫咪 / 光线太暗看不清毛色 / 该花色暂不在收录范围<br>微信公众号「重邮猫咪星球」收录了全部 '+CAT_TOTAL+' 只在册猫咪，可前往查看</div><button class="id-retry" onclick="resetIdentify()">重新上传</button>';return;}
+    const info=FUR_MAP[fur];const pool=info?info.cats:[];
+    if(!pool.length){box.innerHTML='<div class="id-fail">😿 未找到此猫咪哦~</div><button class="id-retry" onclick="resetIdentify()">重新上传</button>';return;}
+    const inShow=CATS.filter(c=>c.pattern===fur);
+    let html='<div class="id-ok">✅ 识别结果：<b>'+info.label+'</b></div>';
+    if(inShow.length)html+=inShow.slice(0,2).map(c=>'<div class="id-cat-card">'+(c.img?'<img class="id-cat-photo" src="cats/'+c.img+'" onerror="this.style.display=\'none\'">':'<div class="cat-avatar" style="background:'+c.color+'22">'+c.emoji+'</div>')+'<div><div class="cat-name">'+c.name+'</div><div class="cat-breed">'+c.breed+' · '+c.status+'</div><div style="font-size:11px;color:#8aa;margin-top:2px">'+c.desc+' · 常出现：'+c.loc+'</div></div></div>').join('');
+    const others=pool.filter(n=>!CATS.some(c=>c.name===n));
+    html+='<div class="id-others">同花色在册共 <b>'+pool.length+'</b> 只'+(others.length?'，还有：'+others.slice(0,6).join('、')+(others.length>6?' 等':''):'')+'</div>';
+    html+='<div class="id-note">🐱 邮宝按毛色特征比对，同花色可能有多只相似猫咪；完整档案请见微信公众号「重邮猫咪星球」</div>';
+    html+='<button class="id-retry" onclick="resetIdentify()">再识别一张</button>';
+    box.innerHTML=html;
+  },1400);}
+function calcDHash(img, sz){
+  try{
+    const c=document.createElement('canvas');c.width=sz+1;c.height=sz;
+    const x=c.getContext('2d');x.drawImage(img,0,0,sz+1,sz);
+    const d=x.getImageData(0,0,sz+1,sz).data;
+    let bits='';
+    for(let r=0;r<sz;r++)for(let c=0;c<sz;c++){const i=(r*(sz+1)+c)*4,g1=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2],i2=(r*(sz+1)+c+1)*4,g2=0.299*d[i2]+0.587*d[i2+1]+0.114*d[i2+2];bits+=g1>g2?'1':'0';}
+    return hex(intFromBits(bits),sz*sz);
+  }catch(e){return null;}
+}
+function intFromBits(b){let v=0;for(let i=0;i<b.length;i++)v=v*2+(b[i]==='1'?1:0);return v;}
+function hex(v,n){let s=v.toString(16);while(s.length<Math.ceil(n/4))s='0'+s;return s;}
+function hammingDist(h1,h2){let d=0;for(let i=0;i<h1.length;i++){const a=parseInt(h1[i],16),b=parseInt(h2[i],16);let x=a^b;while(x){d+=x&1;x>>=1;}}return d;}
+function identifyByHash(img){
+  const upHash=calcDHash(img,8);
+  if(!upHash)return null;
+  let best=null,bestDist=99;
+  for(const ch of CAT_HASHES){const dist=hammingDist(upHash,ch.h);if(dist<bestDist){bestDist=dist;best=ch;}}
+  // 阈值：64位dHash汉明距离≤24视为匹配（同猫照片有角度差异也能命中）
+  if(best&&bestDist<=24)return{hash:upHash,best:best,dist:bestDist};
+  return{hash:upHash,best:null,dist:bestDist};
+}
+function analyzeFur(img){
+  try{
+    const s=40,c=document.createElement('canvas');c.width=s;c.height=s;
+    const x=c.getContext('2d');x.drawImage(img,0,0,s,s);
+    const d=x.getImageData(0,0,s,s).data;
+    let orange=0,black=0,white=0,gray=0;const total=s*s;
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      const max=Math.max(r,g,b),min=Math.min(r,g,b);
+      const lum=0.299*r+0.587*g+0.114*b;
+      const sat=max>0?(max-min)/max:0;
+      if(lum<70)black++;
+      else if(lum>190&&sat<0.28)white++;
+      else if(sat<0.18)gray++;
+      else if(r>=g&&g>=b&&(r-b)>45)orange++;
+    }
+    const p=n=>n/total;
+    if(p(orange)>0.45&&p(white)>0.18)return 'orangewhite';
+    if(p(orange)>0.42)return 'orange';
+    if(p(orange)>0.13&&p(black)>0.13&&p(white)>0.13)return 'calico';
+    if(p(black)>0.45&&p(white)>0.3)return 'cow';
+    if(p(black)>0.62)return 'black';
+    if(p(white)>0.62)return 'white';
+    if(p(gray)>0.45)return 'blue';
+    if(p(orange)>0.18&&p(black)>0.25)return 'tortoise';
+    if(p(orange)>0.2&&p(black)>0.1)return 'tabby';
+    return null;
+  }catch(e){return null;}}
+function ybMini(){return'<div class="youbao yb-mini-img"><img src="youbao.png"><div class="bolt-halo"></div><svg class="bolt-svg b1" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg></div>';}
+function askBar(t,s){return'<div class="ask-youbao-bar" onclick="openChatWith(\'你好邮宝\')">'+ybMini()+'<div class="t">'+t+'<small>'+s+'</small></div><span class="go2">›</span></div>';}
+function onBoardAction(){if(!currentBoard)return;const b=BOARDS[currentBoard];if(currentBoard==='notice'){openChatWith('帮我写一个社团招新的通知');return;}if(currentBoard==='cat'){demoToast('🐱 查看猫咪领养信息，联系动物保护协会');return;}if(b.type==='community'||b.type==='qa'){if(currentBoard==='life'&&lifeTab!=='community'){lifeTab='community';showBoard('life');demoToast('已切回社区页，可发帖讨论');return;}if(!requireAuth('发布内容'))return;openPostDialog();return;}openChat();}
+
+/* ===== 发帖 ===== */
+function openPostDialog(){if(!requireAuth('发布内容'))return;const b=BOARDS[currentBoard];const meta=authState.verified?(ROLE_META[authState.roleKey]||ROLE_META[currentRole]):ROLE_META[currentRole];document.getElementById('postSub').textContent='发布到「'+b.title+'」社区 · 身份：'+(authState.verified?meta.name+' · '+authState.name:'未认证');document.getElementById('postMask').classList.add('show');}
+function closePost(){document.getElementById('postMask').classList.remove('show');}
+function publishPost(){if(!authState.verified){demoToast('🔒 请先完成身份认证');return;}const title=document.getElementById('postTitle').value.trim();if(!title){demoToast('请先填写标题');return;}const tagSel=document.getElementById('postTag');const meta=ROLE_META[authState.roleKey]||{name:'学生'};const post={tag:tagSel.options[tagSel.selectedIndex].text,tagcls:tagSel.value,title,author:authState.name+'（'+meta.name+'）',role:authState.roleKey==='teacher'?'teacher':authState.roleKey==='staff'?'staff':'stu',replies:0,views:1,likes:0,liked:false};(currentBoard==='life'?lifePosts:helpPosts).unshift(post);closePost();document.getElementById('postTitle').value='';document.getElementById('postContent').value='';renderBoard(currentBoard);demoToast('✅ 发布成功！');}
+
+/* ===== 视图切换 ===== */
+function goHome(){document.getElementById('chatView').style.display='none';document.getElementById('boardView').style.display='none';document.getElementById('homeView').style.display='flex';document.getElementById('btnView').textContent='进入对话';}
+function openChat(){document.getElementById('homeView').style.display='none';document.getElementById('boardView').style.display='none';document.getElementById('chatView').style.display='block';document.getElementById('btnView').textContent='返回主页';}
+function openChatWith(q){openChat();document.getElementById('chatInput').value=q;document.getElementById('chatInput').focus();}
+function toggleView(){const c=document.getElementById('chatView');c.style.display==='block'?goHome():openChat();}
+function bounce(el){el.classList.remove('bounce');void el.offsetWidth;el.classList.add('bounce');}
+
+/* ===== 历史对话过滤 ===== */
+function switchTab(tab,el){document.querySelectorAll('.htab').forEach(t=>t.classList.remove('on'));el.classList.add('on');const items=document.querySelectorAll('.hitem');let vis=0;items.forEach(it=>{let s=true;if(tab==='pinned')s=it.dataset.pinned==='1';if(tab==='starred')s=it.dataset.starred==='1';it.classList.toggle('hidden',!s);if(s)vis++;});document.querySelectorAll('.hgroup').forEach(g=>{let hv=false,n=g.nextElementSibling;while(n&&!n.classList.contains('hgroup')){if(n.classList.contains('hitem')&&!n.classList.contains('hidden'))hv=true;n=n.nextElementSibling;}g.classList.toggle('hidden',!hv);});document.getElementById('emptyTip').style.display=vis?'none':'block';}
+function toggleStar(el){const it=el.closest('.hitem');const on=el.classList.toggle('on');it.dataset.starred=on?'1':'0';}
+
+/* ===== 本地知识库 ===== */
+const KB={'转专业|分流|换专业':'重邮转专业政策（依据《本科生转专业管理办法》）：\n· 申请时间：一年级末或二年级末，每学年集中受理\n· 跨学院、院内转专业均可申请，可填两个志愿\n· 原则上学院不得设置转出名额限制\n· 大类培养按“1+3”或“2+2”模式，大类阶段结束后分流\n\n💡 想转专业：大一绩点是核心筹码，高数、程序设计等高学分课务必考好\n\n📍 详见「规划」板块 · 学院专业与年级行动清单',
+'保研|推免|夏令营':'保研（推免）关键时间线：\n· 大三下 6-8 月：夏令营投递与参营（黄金窗口，多投多试）\n· 大四 9 月：预推免 + 推免资格综合测评\n· 9 月底：国家推免系统填报确认\n\n💡 竞争力三件套：绩点排名（专业前列最稳）+ 六级高分 + 竞赛科研\n\n📍 详见「规划」板块 · 毕业去向时间线',
+'考研|考研时间|考研准备|读研|研究生':'考研关键时间线：\n· 大三寒假：启动复习，定院校定专业\n· 10 月：网上报名（研招网）\n· 12 月倒数第二个周末：初试\n· 次年 2 月出分 → 3 月国家线 → 3-4 月复试/调剂\n\n💡 重邮本科升学率超 36%，通信、计算机都是热门方向\n\n📍 详见「规划」板块 · 毕业去向时间线',
+'就业|找工作|秋招|春招|招聘|实习|求职|offer':'求职时间线与重邮就业数据：\n· 大三暑期：争取实习（大厂实习=秋招敲门砖）\n· 大四 9-11 月：秋招（全年约 80% 编制岗位在此）\n· 次年 3-4 月：春招补录\n\n📊 重邮 2023 届：总落实率超 95%，本科协议合同就业超 48%\n🏢 头部雇主：华为、中兴、小米、腾讯、三大运营商\n\n📍 详见「规划」板块 · 毕业去向',
+'考公|公务员|选调|国考|省考|编制':'考公时间线：\n· 国考：10 月中旬报名，11 月底笔试\n· 重庆市考：一般次年 1-2 月报名，3 月笔试\n· 选调生：关注学校就业网，应届生专属通道\n\n💡 通信 / 计算机专业可报岗位面较宽，大三起可开始行测刷题\n\n📍 详见「规划」板块 · 毕业去向',
+'培养方案|课程体系|课程设置|学分':'培养方案速览：\n· 大类培养 + 专业培养两段式，大类按“1+3”或“2+2”分流\n· 通识必修（思政/英语/数理）+ 专业核心 + 实践环节\n· 毕业学分要求以各专业培养方案为准\n\n🏫 完整培养方案见官网 → 人才培养 / 教务处\n\n📍 详见「规划」板块 · 学院专业',
+'学院|专业介绍|哪个专业|选什么专业|什么专业好':'重邮主要学院与王牌专业：\n· 通信与信息工程学院：通信工程（国家级特色专业）\n· 计算机学院/人工智能学院：与科大讯飞共建 AI\n· 自动化学院：控制学科评估 B-，华为 ICT 学院\n· 光电工程学院：光通信与集成电路\n· 经管理学院：管理科学与工程博士点\n· 理学院：通信工程+应用物理学双学士学位\n\n📍 完整介绍见「规划」板块 · 学院专业',
+'大一新生|大一规划|大一怎么|刚入学|新生入学':'大一行动清单：\n· 守住绩点：高数、程序设计学分最高，是绩点主战场\n· 英语四级：12 月首考力争一次过\n· 竞选班委 / 加入 1 个学生组织：攒人脉也攒综测\n· 想转专业：大一成绩是核心筹码\n· 大类培养：一年级末面临专业分流\n\n💡 大一别焦虑，把每一步走稳就是最快的路 ⚡\n\n📍 详见「规划」板块 · 四年规划',
+'人生规划|大学规划|四年规划|规划|迷茫|不知道干什么|未来怎么办|怎么规划|大二|大三|大四':'四年成长路线图：\n🌱 大一：守绩点 → 四级一次过 → 班委/社团 → 转专业筹码\n🚀 大二：六级刷高分 → 进实验室 → 打竞赛（数模/互联网+）\n🎯 大三：定方向——保研（6-8月夏令营）/ 考研（寒假启动）/ 实习\n🏁 大四：秋招 9-11 月 · 考研 12 月初试 · 春招 3-4 月 · 毕设答辩\n\n📍 详见「规划」板块 · 四年规划与毕业去向',
+'官网|学校官网|重邮官网|教务处|教务系统':'🔗 重庆邮电大学官网：https://www.cqupt.edu.cn\n常用入口：人才培养（培养方案）· 教务处（选课/成绩/学籍）· 就业信息网\n\n📍 「规划」板块也有官网直达入口',
+'毕业去向|出路|毕业后|毕业了|升学':'重邮毕业去向（2023 届就业质量报告）：\n· 总落实率超 95%\n· 升学超 36% · 协议合同就业超 48%\n· 主要去向：华为/中兴/小米/腾讯/三大运营商及继续深造\n\n📍 详见「规划」板块 · 毕业去向时间线',
+'志愿服务|志愿时长|志愿时|多少小时':'志愿服务时长要求（依据官方文件）：\n1. 评优评先（三好学生等）：志愿服务 ≥ 20 小时\n2. 优秀毕业生：每学年志愿服务 ≥ 20 小时\n\n💡 累计志愿时长的认定以学校志愿服务系统记录为准，参加校内外志愿活动均可累计\n\n📄 依据：《本科生评优实施办法（修订）》第四、七条','选课|选修课|通识课|选课建议':'选课不用愁！我整理了 175 门通识选修课（含学长学姐真实点评）+ 交叉通识课 / 外语选修的详细评价。\n\n👉 详见「帮助 → 选课建议」，支持按课程名、老师名搜索，点评带好评/避雷标记\n\n⚡ 数据来源：学生整理的选课参考表','猫咪|猫猫|邮猫|流浪猫|识图|识别猫咪':'重邮「猫咪星球」在册邮猫共 334 只！\n\n🐱 精选展示：呆豆（碰瓷讨粮橘猫）、二号（严肃虎斑）、黄豆（圆脸橘白）、蜜橘（暂不中转）、雪兔（优雅白猫）等\n\n📸 新功能「识图找猫」：上传照片自动分析毛色，比对在册猫咪，识别失败会提示"未找到此猫咪哦~"\n\n数据来源：微信公众号「重邮猫咪星球」，详见猫咪板块（在对话里点 📎 传照片也可以哦）','三好学生|评优|评先':'根据《本科生评优实施办法（修订）》第四、五条：\n1. 基本条件：课程一次性通过；志愿服务 ≥ 20 小时；体测 ≥ 60 分\n2. 核心条件：综测成绩排名专业前 10%\n3. 比例：不超过学院学生人数的 5%\n\n📄 依据：重邮〔2026〕95号','优秀学生干部':'根据第六条：需担任学生干部满一学年；综测排名前 50%（校院两级前 30%）；考核优秀。','优秀毕业生':'根据第七条：课程一次性通过；曾获校级以上荣誉称号；曾获奖学金或省部级奖励；志愿 ≥ 20 小时/学年。比例 ≤ 10%。','奖学金':'学业奖学金分三等：一等 3000 元（前 10%，≥80）；二等 2000 元（前 15%，≥78）；三等 1000 元（前 40%，≥75）。国奖 8000 元。\n\n📄 依据：《奖学金评定办法》第十、十一条','综测|综合素质测评':'综测 = 德育×10% + 智育×70% + 体育×10% + 美育×5% + 劳动×5% + 学术科创附加分 − 扣分\n\n📄 依据：《本科生综合素质测评办法》第五条','综测加分|加分项':'学科竞赛获奖、论文发表、知识产权、创新创业项目等均可加分。详见《综测办法》。','空教室|空闲教室|自习室':'周三下午共 17 间空闲教室，推荐 5401（五教 150 座）和 2203（二教 60 座）。\n\n⚡ 模拟接口数据','图书馆':'图书馆官网：https://lib.cqupt.edu.cn','食堂|美食|好吃的|吃什么|推荐吃':'重邮有9个食堂！推荐：\n· 中心食堂小面（8元，早上去最正宗）\n· 二食堂冒烤鸭（15-20元，新窗口）\n· 延生食堂石锅拌饭（12-16元）\n· 大西北食堂泡囊（10-14元，限量）\n· 三食堂煲仔饭（13-18元）\n校外推荐南山火锅、崇文门小吃街烤脑花\n外卖推荐茶百道杨枝甘露、肯德基满39减15\n\n💡 以各食堂当日实际供应为准，热门菜去晚了会售罄哦\n\n📍 详见「生活」板块 · 美食推荐（多方收集·仅供参考）','校车':'后勤服务网：https://cyhq.cqupt.edu.cn','上传|上传文件|传文件|文件识别|识别文件|识别图片|上传照片|附件|发文件':'可以直接点对话输入框左边的 📎 按钮上传文件给我哦~\n\n我目前支持识别：\n· 🖼️ 图片——找猫咪（自动比对在册全部邮猫）+ 图像分析（不是猫也会帮你分析画面）\n· 📄 txt / md / csv / log——文字内容识别，统计字数并关联校园政策关键词\n\n💡 其他格式会显示文件信息，你可以把内容复制成文字发给我~','比赛|竞赛|大创':'竞赛报名：教务处学生服务 → 竞赛报名。大创全年可申报。','形象工坊|换装|AI造型|设计形象|自定义邮宝|装扮|换颜色':'邮宝形象工坊大升级 ⚡\n\n✨ 八款 AI 整装造型（含专属动作）：\n📮 信使款 · 邮电本源（邮差制服+闪电邮包，邮宝的招牌造型）\n🏃 运动风 · 竖起大拇指\n🧢 潮流风 · 双手抱胸\n🤠 牛仔风 · 牛仔马甲\n🔬 科研风 · 手举试管\n👕 白T恤 · 清爽日常\n🎓 学士服 · 毕业盛典\n🧣 红围巾 · 暖心冬日\n\n🎨 身体颜色支持真实换色（蓝/橙/粉/紫/青），闪电和发型保持不变\n\n👉 打开方式：首页右键邮宝 →「自定义我的邮宝」（需先完成身份认证）','办事|课表|成绩|证明':'教务处学生服务（统一身份认证）：https://jw.cqupt.edu.cn','邮宝|你是谁|你叫什么|你是什么|介绍自己|自我介绍':'我是小邮宝 ⚡ 重庆邮电大学AI校园管家，以学校吉祥物"邮宝"为IP。我能帮你：\n· 政策问答（评优/奖学金/综测条件）\n· 空教室查询（按星期/时段/楼栋）\n· 公文写作（通知/申请/策划/失物招领）\n· 选课建议（175门通识选修课+学长学姐点评）\n· 成长规划（培养方案 / 四年规划 / 毕业去向）\n· 校园猫咪图鉴 + 识图找猫 🐱\n\n有什么校园问题尽管问我~','你好|您好|早上好|下午好|晚上好|嗨|哈喽|hi|hello':'你好呀！我是邮宝 ⚡ 你的校园小管家~ 有什么可以帮你的吗？\n可以问我评优条件、奖学金、综测、空教室、选课建议、成长规划，也可以跟我聊天~','谢谢|感谢|谢啦|thx|thanks':'不客气~ 能帮到你邮宝就很开心啦 ⚡ 还有什么问题随时问我~','再见|拜拜|晚安|走了|下线':'拜拜~ 邮宝随时在这里等你，有问题再来找我 ⚡ 祝你今天顺利！','早上好|早安|早啊':'早上好呀！新的一天加油~ 早餐记得吃，中心面夫子的奶香小馒头超赞 🥐 有什么需要帮忙的随时说~','晚上好|晚好':'晚上好~ 今天辛苦啦！有什么校园问题或者想聊聊天，邮宝都在~','在吗|在不在|有人吗':'在的在的~ 邮宝24小时在线 ⚡ 你问吧，我在听~','天气|今天天气|外面天气|下雨吗':'重庆最近天气多变，记得带伞~ 我这边没法实时查天气，但你可以看页面右上角的天气小组件，或者打开手机天气app确认哦 ☀️🌧','心情不好|不开心|难过|郁闷|emo|烦躁|心累|压力大':'抱抱你 🤗 大学生活里难免有压力，但请记得：你不是一个人在战斗。邮宝在这里陪你~ \n试试这些放松方式：去操场跑两圈、撸撸校园猫咪（推荐去二食堂门口找招财，超治愈）、或者找好朋友倾诉\n如果持续低落，记得联系学校心理咨询中心，他们很专业也很温柔 ❤️','好累|好困|想睡觉|没精神':'辛苦啦~ 大学确实容易累。提醒你：再忙也要保证睡眠，熬夜伤身又伤效率。\n小憩20分钟比硬撑更管用。还有，记得好好吃饭，别让胃跟着受委屈 🍚','夸夸我|鼓励|加油|打气':'你已经很棒啦！能意识到需要鼓励本身就是一种力量 ⚡\n邮宝相信你：每一个早起、每一次坚持、每一份努力都不会被辜负。今天的你比昨天的你又进步了一点点，这就够了！加油呀~ 💪','你好笨|你真笨|傻|蠢|不好用':'呜呜，邮宝还在学习中，有些问题确实答不好 😢 但我会越来越聪明的！\n你愿意告诉我哪里没帮到你吗？或者试试问我擅长的：评优条件、奖学金、空教室、选课建议、成长规划~','笑死|哈哈|哈哈哈|搞笑|好笑':'哈哈哈能让你开心邮宝就满足啦 ⚡ 要不要再来点校园八卦，或者问问选课建议？','无聊|没事干|好闲':'无聊的话邮宝给你几个建议~\n· 去撸校园猫咪（推荐二食堂门口的"招财"，会翻肚皮！）\n· 试试新美食：阳乐食堂一楼重庆小面，"校内最好吃没有之一"\n· 或者跟我聊聊校园生活、问问选课建议？','想家|想回家|家里':'想家很正常呀，说明家里有温暖你的人在等你。可以给家人打个电话聊聊近况，他们一定很想听你的声音 ❤️\n等假期到了就能回去啦，到时候好好吃一顿家里的饭~','饿|饿了|吃什么|不知道吃什么|吃什么好':'饿啦？邮宝推荐你几个高频好评的选择：\n· 校内：中心食堂一楼牛肉饭（"外卖都不想点了"） \n· 校内：阳乐食堂一楼重庆小面（"校内最好吃"）\n· 外卖：麦兜乐瓦香鸡（"回购无数次"）\n· 外卖：火冒三丈冒菜（"不知道吃啥就点它"）\n\n💡 具体以当日档口供应为准，去晚了热门款会售罄哦~\n\n📍 166条同学真实推荐详见「生活」板块 · 美食推荐','热|好热|天气热':'重庆的夏天确实热得够呛 😅 多喝水、少在太阳下暴晒，图书馆空调很凉快可以去避暑学习~','冷|好冷|天气冷':'降温啦记得加衣服~ 重庆的湿冷是魔法攻击，秋裤安排上。喝点热汤暖暖，莘莘食堂的渔粉番茄味不错 🍲','放假|假期|什么时候放假|寒假|暑假':'具体的放假时间以学校校历为准哦，可以关注教务处通知。假期前别忘了检查宿舍水电、带走贵重物品~','考试|挂科|补考|期末':'考试周辛苦啦！邮宝给你打气：\n· 临时抱佛脚优先看老师划的重点和往年题\n· 综测成绩排名关系奖学金，一次没考好不等于完蛋\n· 实在没把握的科目，补考也是一种重新开始的机会\n\n加油！邮宝相信你~ ⚡','恋爱|表白|喜欢|对象|单身':'这个问题邮宝不太擅长 😊 不过可以告诉你：校园里的感情最纯粹，无论结果如何都是珍贵的经历。\n好好做自己，自然会吸引到欣赏你的人。如果有人让你心动，勇敢一点不后悔~','推荐|建议一下|有什么好|好玩的':'看你想要什么类型的推荐~\n· 想吃好吃的：直接问我，食堂档口真实口碑推荐\n· 想撸猫：去「猫咪」板块看看校园邮猫\n· 学习上的：选课建议、综测加分规则都可以问我\n· 想办事：教务处、图书馆、后勤服务入口我都有~','功能|能做什么|都会什么|怎么用':'邮宝能帮你做这些~\n· 📋 政策问答：评优/奖学金/综测条件\n· 🏫 空教室查询（按星期/时段）\n· ✍️ 公文写作（通知/申请/策划/失物招领）\n· 📚 选课建议（175门课+学长学姐点评）\n· 🗺️ 成长规划（培养方案 / 四年规划 / 毕业去向）\n· 🐱 校园猫咪图鉴+识图找猫\n· 💬 还有我陪你聊天~\n\n直接说需求就行，比如"评三好学生需要什么条件"','好的|嗯嗯|ok|okay|收到|了解':'邮宝随时待命 ⚡ 还有其他问题吗？','哈哈':'哈哈~ 还有啥想聊的吗？','666|厉害|牛|牛逼':'过奖啦~ 邮宝只是想帮大家把校园生活过得更顺一点 ⚡'};
+const DOC_TEMPLATES={notice:'关于[事项]的通知\n\n[主送对象]：\n\n[事由背景]。现将有关事项通知如下：\n\n一、时间安排\n  [具体时间]\n\n二、地点/形式\n  [地点]\n\n三、参与对象\n  [限定条件]\n\n四、主要内容\n  1. [环节一]\n  2. [环节二]\n\n五、注意事项\n  - [要求一]\n\n联系人：[姓名]  电话：[电话]\n[发文单位]\n[年 月 日]',application:'[申请类型]申请书\n\n尊敬的[接收方]：\n\n我是[学院][专业][年级]学生[姓名]（学号：[学号]），现因[事由]，特申请[事项]。\n\n[理由详述]\n\n此致\n敬礼\n\n申请人：[姓名]\n[年 月 日]',plan:'[活动名称]活动策划书\n\n一、活动背景\n  [背景]\n\n二、活动目的\n  1. [目的一]\n\n三、时间与地点\n  时间：[日期]\n  地点：[场地]\n\n四、参与对象\n  [范围]\n\n五、活动流程\n  | 时间 | 环节 | 负责人 |\n  |------|------|--------|\n  | [时段1] | [环节1] | [姓名] |\n\n六、经费预算\n  合计：[总金额]\n\n七、人员分工\n  [总协调]：[姓名]\n\n八、应急预案\n  [应对方案]\n\n策划人：[姓名]\n[年 月 日]',lostfound:'失物招领\n\n一、物品信息\n  物品名称：[物品名称]\n  拾获时间：[年 月 日 时]\n  拾获地点：[地点]\n  物品特征：[颜色/型号/特征]\n\n二、认领方式\n  请前往[地点]认领，联系人：[姓名] [电话]\n  认领时需说明物品特征以核实\n\n三、注意事项\n  - 贵重物品需出示有效证件\n  - 超[天数]天未认领将移交保卫处\n\n[发布单位]\n[年 月 日]'};
+function matchKB(q){for(const keys in KB){if(keys.split('|').some(k=>q.includes(k)))return KB[keys];}return null;}
+function generateDoc(q){if(!/(写|帮我|生成|代写|起草)/.test(q))return null;if(q.includes('失物')||q.includes('招领'))return{type:'失物招领',content:DOC_TEMPLATES.lostfound};if(q.includes('策划')||q.includes('活动'))return{type:'活动策划书',content:DOC_TEMPLATES.plan};if(q.includes('申请'))return{type:'申请书',content:DOC_TEMPLATES.application};if(q.includes('通知')||q.includes('公文'))return{type:'通知',content:DOC_TEMPLATES.notice};return null;}
+function sendChat(){const input=document.getElementById('chatInput');const v=input.value.trim();if(!v)return;const msgs=document.getElementById('messages');const um=document.createElement('div');um.className='msg user';um.innerHTML='<div class="ava">我</div><div class="bubble">'+esc(v)+'</div>';msgs.appendChild(um);input.value='';msgs.scrollTop=msgs.scrollHeight;setThinking(true);const tm=document.createElement('div');tm.className='msg yb';tm.innerHTML='<div class="ava yb"><div class="youbao thinking"><img src="youbao.png"><div class="bolt-halo"></div><svg class="bolt-svg b1" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg><svg class="bolt-svg b2" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg></div></div><div class="bubble"><div class="thinking-ind">⚡ 邮宝思考中<span class="dots"><i></i><i></i><i></i></span></div></div>';msgs.appendChild(tm);msgs.scrollTop=msgs.scrollHeight;setTimeout(()=>{tm.remove();setThinking(false);const reply=matchKB(v);const doc=generateDoc(v);const am=document.createElement('div');am.className='msg yb';let bc='';const prefix=CHAR_PREFIX[customState.charName]||'';if(reply){bc='<div class="bubble">'+prefix+reply.replace(/\n/g,'<br>')+'</div>';}else if(doc){bc='<div class="bubble">'+prefix+'已为你生成<b>'+doc.type+'</b>：\n<pre>'+esc(doc.content)+'</pre><div class="small">✍ [ ] 内为待填写项，可直接复制</div></div>';}else{bc='<div class="bubble">'+prefix+'这个问题邮宝还没学会怎么回答 🤔 不过我一直在学习中~\n\n我比较擅长这些：\n· 校园政策（评优/奖学金/综测）\n· 空教室查询 · 公文写作\n· 选课建议 · 成长规划 · 校园猫咪\n\n或者就跟我聊聊天也行呀，邮宝很乐意听你说~ ⚡</div>';}am.innerHTML='<div class="ava yb"><div class="youbao"><img src="youbao.png"><div class="bolt-halo"></div><svg class="bolt-svg b1" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg><svg class="bolt-svg b2" viewBox="0 0 24 24"><path fill="#ffd21f" stroke="#f5a800" stroke-width="1" d="M13 2 L5 14 h6 l-2 8 L19 9 h-6 z"/></svg></div></div>'+bc;msgs.appendChild(am);msgs.scrollTop=msgs.scrollHeight;},1200);}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ===== 对话上传文件识别（图片找猫/图像分析 · txt·md·csv文本识别 · 其他格式文件信息） ===== */
+function onChatFilePick(inp){
+  if(!inp.files||!inp.files.length)return;
+  const file=inp.files[0];
+  const isImg=/^image\//.test(file.type)||/\.(jpe?g|png|gif|webp|bmp)$/i.test(file.name);
+  if(isImg){
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>chatIdentify(img,file);
+      img.onerror=()=>demoToast('图片加载失败');
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }else{
+    chatFileAnalyze(file);
+  }
+  inp.value='';
+}
+/* 通用图像分析：Canvas真实采样主色调/明暗/内容猜测 */
+function analyzeImageGeneral(img){
+  const cv=document.createElement('canvas');
+  const sc=Math.min(120/img.width,120/img.height);
+  cv.width=Math.max(1,Math.round(img.width*sc));cv.height=Math.max(1,Math.round(img.height*sc));
+  const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(img,0,0,cv.width,cv.height);
+  let d;try{d=ctx.getImageData(0,0,cv.width,cv.height).data;}catch(err){d=null;}
+  if(!d)return{w:img.width,h:img.height,orient:img.width>=img.height?'横幅':'竖幅',dominant:'未知',bright:'未知',colorful:'未知',guess:'无法分析画面内容'};
+  let rs=0,gs=0,bs=0,n=0,white=0,sat=0;
+  for(let i=0;i<d.length;i+=4){const R=d[i],G=d[i+1],B=d[i+2];rs+=R;gs+=G;bs+=B;n++;const mx=Math.max(R,G,B),mn=Math.min(R,G,B);if(mx>235&&mx-mn<15)white++;sat+=(mx-mn);}
+  const r=rs/n,g=gs/n,b=bs/n,avg=(r+g+b)/3,satAvg=sat/n,wf=white/n;
+  let dominant,guess;
+  if(wf>0.55){dominant='大面积纯白/浅色';guess='看起来像文档、截图或白底图片';}
+  else if(avg<70){dominant='偏暗色调';guess='光线较暗，可能是夜景或暗光环境照片';}
+  else if(satAvg>60&&r>g&&r>b){dominant='暖色调为主';guess='色彩浓郁偏暖，可能是美食、日落等照片';}
+  else if(g>=r&&g>=b&&satAvg>25){dominant='绿色调为主';guess='绿色占比高，可能是植物、草坪或户外风景';}
+  else if(b>r&&b>g){dominant='冷色调为主';guess='偏蓝色调，可能是天空、水面或冷色场景';}
+  else{dominant='中性色调';guess='色调均衡的普通照片';}
+  return{w:img.width,h:img.height,orient:img.width>=img.height?'横幅':'竖幅',dominant,bright:avg>180?'明亮':(avg>100?'适中':'偏暗'),colorful:satAvg>60?'色彩丰富':'色彩柔和',guess};
+}
+function chatIdentify(img,file){
+  // 显示用户上传的照片消息
+  const msgs=document.getElementById('messages');
+  const um=document.createElement('div');um.className='msg user';
+  const photoUrl=img.src;
+  um.innerHTML='<div class="ava">我</div><div class="bubble"><img class="chat-photo-msg" src="'+photoUrl+'"><div style="font-size:11px;color:#8aa;margin-top:4px">📸 帮我识别一下这张图片</div></div>';
+  msgs.appendChild(um);msgs.scrollTop=msgs.scrollHeight;
+  // 邮宝思考
+  setThinking(true);
+  const tm=document.createElement('div');tm.className='msg yb';
+  tm.innerHTML='<div class="ava yb"><div class="youbao thinking"><img src="youbao.png"><div class="bolt-halo"></div></div></div><div class="bubble"><div class="thinking-ind">⚡ 识别中…<span class="dots"><i></i><i></i><i></i></span></div></div>';
+  msgs.appendChild(tm);msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(()=>{
+    tm.remove();setThinking(false);
+    const am=document.createElement('div');am.className='msg yb';
+    // dHash精确匹配
+    const hashResult=identifyByHash(img);
+    let bc='';
+    if(hashResult&&hashResult.best){
+      const c=CATS.find(cc=>cc.img===hashResult.best.f);
+      if(c){
+        bc='<div class="bubble">找到啦！这是 <b style="color:var(--brand)">'+c.name+'</b> 🎉<div class="chat-photo-result"><div style="display:flex;gap:10px;align-items:center"><img class="id-cat-photo" src="cats/'+c.img+'"><div><div style="font-weight:700;font-size:13px">'+c.name+'</div><div style="font-size:11px;color:#8aa">'+c.breed+' · '+c.status+'</div><div style="font-size:11px;color:#8aa;margin-top:2px">'+c.desc+'</div><div style="font-size:11px;color:#8aa">常出现：'+c.loc+'</div></div></div></div><div style="font-size:11px;color:#8aa;margin-top:6px">⚡ 感知哈希(dHash)档案比对命中 · 现场随拍照片将走花色特征推断</div></div>';
+      }
+    }
+    if(!bc){
+      // 花色兜底
+      const fur=analyzeFur(img);
+      if(fur){
+        const info=FUR_MAP[fur];const inShow=CATS.filter(cc=>cc.pattern===fur);
+        let cats=inShow.slice(0,3).map(cc=>'<div style="display:flex;gap:8px;align-items:center;margin:6px 0">'+(cc.img?'<img class="id-cat-photo" src="cats/'+cc.img+'" style="width:50px;height:50px">':'<div class="cat-avatar" style="background:'+cc.color+'22;width:50px;height:50px">'+cc.emoji+'</div>')+'<div><b>'+cc.name+'</b> · '+cc.breed+'</div></div>').join('');
+        bc='<div class="bubble">这只猫看起来是 <b>'+info.label+'</b>，可能是这几只之一：<div class="chat-photo-result">'+cats+'</div><div style="font-size:11px;color:#8aa;margin-top:6px">完整档案请见微信公众号「重邮猫咪星球」</div></div>';
+      }else{
+        // 非猫咪图片 → 通用图像分析
+        const gi=analyzeImageGeneral(img);
+        const fs=file&&file.size?(file.size>1048576?(file.size/1048576).toFixed(1)+'MB':(file.size/1024).toFixed(1)+'KB'):'';
+        bc='<div class="bubble">🔍 这好像不是猫咪照片，帮你做了图像分析：<div class="chat-photo-result"><div style="font-size:12px;line-height:1.9">· 尺寸：<b>'+gi.w+'×'+gi.h+'</b>（'+gi.orient+'）'+(fs?' · '+fs:'')+'<br>· 画面：'+gi.bright+' · '+gi.colorful+' · '+gi.dominant+'<br>· 猜测：'+gi.guess+'</div></div><div style="font-size:12px;color:#8aa;margin-top:6px;line-height:1.8">📷 如果这其实是猫咪照片，可能是光线太暗或花色暂未收录，可换清晰照片重试，或到猫咪板块用「识图找猫」（在册 '+CAT_TOTAL+' 只邮猫）<br>📄 图片里的文字我暂时读不了，可以把文字直接发给我~</div></div>';
+      }
+    }
+    am.innerHTML='<div class="ava yb"><div class="youbao"><img src="youbao.png"><div class="bolt-halo"></div></div></div>'+bc;
+    msgs.appendChild(am);msgs.scrollTop=msgs.scrollHeight;
+  },1500);
+}
+/* 文本/其他文件识别 */
+function chatFileAnalyze(file){
+  const msgs=document.getElementById('messages');
+  const sizeText=file.size>1048576?(file.size/1048576).toFixed(1)+'MB':(file.size/1024).toFixed(1)+'KB';
+  const um=document.createElement('div');um.className='msg user';
+  um.innerHTML='<div class="ava">我</div><div class="bubble"><div class="chat-file-msg">📄 '+esc(file.name)+' <small>'+sizeText+'</small></div><div style="font-size:11px;color:#8aa;margin-top:4px">帮我识别一下这个文件</div></div>';
+  msgs.appendChild(um);msgs.scrollTop=msgs.scrollHeight;
+  setThinking(true);
+  const tm=document.createElement('div');tm.className='msg yb';
+  tm.innerHTML='<div class="ava yb"><div class="youbao thinking"><img src="youbao.png"><div class="bolt-halo"></div></div></div><div class="bubble"><div class="thinking-ind">⚡ 识别中…<span class="dots"><i></i><i></i><i></i></span></div></div>';
+  msgs.appendChild(tm);msgs.scrollTop=msgs.scrollHeight;
+  const reply=bc=>{tm.remove();setThinking(false);const am=document.createElement('div');am.className='msg yb';am.innerHTML='<div class="ava yb"><div class="youbao"><img src="youbao.png"><div class="bolt-halo"></div></div></div>'+bc;msgs.appendChild(am);msgs.scrollTop=msgs.scrollHeight;};
+  const isText=/\.(txt|md|csv|log)$/i.test(file.name);
+  if(isText){
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const text=String(e.target.result||'');
+      const chars=text.replace(/\s/g,'').length;
+      const lines=text.split(/\r?\n/).length;
+      const probes=[['综测','综测成绩怎么算？'],['奖学金','奖学金的评定条件是什么？'],['三好','三好学生需要什么条件？'],['评优','评优的基本条件有哪些？'],['空教室','周三下午有哪些空教室？'],['选课','选课有什么建议？']];
+      const hit=[];probes.forEach(p=>{if(text.indexOf(p[0])>-1)hit.push(p);});
+      const kwHtml=hit.length?('检测到关键词：'+hit.slice(0,4).map(h=>'<b style="color:var(--brand)">'+h[0]+'</b>').join('、')+'，可以直接问我，比如“<b>'+hit[0][1]+'</b>”'):'未检测到校园政策关键词，可以直接把内容复制发给我~';
+      reply('<div class="bubble">📄 文本识别完成！<b>'+esc(file.name)+'</b><div class="chat-photo-result"><div style="font-size:12px;line-height:1.9">· 共 <b>'+text.length+'</b> 字符（去空白 <b>'+chars+'</b> 字）· <b>'+lines+'</b> 行<br>· '+kwHtml+'</div>'+(text.length?'<div style="font-size:11px;color:#678;margin-top:6px;background:#fff;border-radius:8px;padding:8px 10px;max-height:110px;overflow-y:auto;border:1px solid var(--border)">预览：'+esc(text.slice(0,150))+(text.length>150?'…':'')+'</div>':'')+'</div></div>');
+    };
+    reader.onerror=()=>reply('<div class="bubble">😿 文件读取失败，请重试~</div>');
+    reader.readAsText(file);
+  }else{
+    const known={pdf:'PDF 文档',doc:'Word 文档',docx:'Word 文档',xls:'Excel 表格',xlsx:'Excel 表格'};
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    const typeName=known[ext]||file.type||'未知类型';
+    reply('<div class="bubble">📎 收到 <b>'+esc(file.name)+'</b>（'+sizeText+' · '+typeName+'）<div class="chat-photo-result"><div style="font-size:12px;line-height:1.9">这个格式我暂时还不能读取内容哦 🙇<br>目前支持识别：<br>· 🖼️ <b>图片</b>：找猫咪（比对在册 '+CAT_TOTAL+' 只邮猫）+ 图像分析<br>· 📄 <b>txt / md / csv / log</b>：文字内容识别与统计</div><div style="font-size:11px;color:#8aa;margin-top:6px">💡 可以把文档里的文字复制发给我，我来帮你分析~</div></div></div>');
+  }
+}
+
+/* ===== 形象工坊 ===== */
+document.addEventListener('contextmenu',e=>{const yb=e.target.closest('.youbao');if(yb){e.preventDefault();const m=document.getElementById('ctxMenu');m.style.left=Math.min(e.clientX,innerWidth-190)+'px';m.style.top=Math.min(e.clientY,innerHeight-120)+'px';m.classList.add('show');}else document.getElementById('ctxMenu').classList.remove('show');});
+function hideCtx(){document.getElementById('ctxMenu').classList.remove('show');}
+const customState={ai:'none',colorName:'邮宝绿',hair:'original',hairName:'原始爆炸头',pose:'stand',poseName:'标准站姿',charName:'温柔体贴',moodName:'开心'};
+function openCustomize(focus){if(!requireAuth('设计邮宝形象'))return;document.getElementById('customizeMask').classList.add('show');renderDrafts();if(focus==='wall')setTimeout(()=>document.getElementById('wallGrid').scrollIntoView({behavior:'smooth'}),120);if(focus==='draft')setTimeout(()=>document.getElementById('draftGrid').scrollIntoView({behavior:'smooth'}),120);}
+function closeCustomize(){document.getElementById('customizeMask').classList.remove('show');}
+/* 身体颜色 → 像素级换色图（保留闪电黄色/棕黑发/透明底，源脚本 recolor_body.py） */
+const COLOR_IMGS={'邮宝绿':'youbao.png','重邮蓝':'youbao_blue.png','暖阳橙':'youbao_orange.png','樱花粉':'youbao_pink.png','星空紫':'youbao_purple.png','薄荷青':'youbao_mint.png'};
+function pickColor(el,name){document.querySelectorAll('#colorSwatches .swatch').forEach(s=>s.classList.remove('on'));el.classList.add('on');customState.colorName=name;document.getElementById('curColor').textContent=name;applyCustom();}
+function pickHair(btn,key){document.querySelectorAll('#hairRow .cbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');customState.hair=key;const names={original:'原始爆炸头',short:'清爽短发',bowl:'锅盖头',bald:'光头'};customState.hairName=names[key];document.getElementById('curHair').textContent=names[key];applyCustom();}
+function pickChar(btn,name){document.querySelectorAll('#charRow .cbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');customState.charName=name;document.getElementById('curChar').textContent=name;}
+function pickMood(btn,name){document.querySelectorAll('#moodRow .cbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');customState.moodName=name;document.getElementById('curMood').textContent=name;const m=MOOD_META[name];document.getElementById('moodTag').textContent=m.icon+' '+m.label;}
+function pickPose(btn,key,name){document.querySelectorAll('#poseRow .cbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');customState.pose=key;customState.poseName=name;document.getElementById('curPose').textContent=name;applyCustom();}
+
+/* AI造型：以官方参考图为标准的整装造型（含专属动作），选中即整图替换 */
+const AI_OUTFITS={
+  sport:{name:'运动风',img:'youbao_sport.jpg',desc:'👍 竖起大拇指'},
+  casual:{name:'潮流风',img:'youbao_casual.jpg',desc:'😎 双手抱胸'},
+  denim:{name:'牛仔风',img:'youbao_denim.jpg',desc:'🤠 牛仔马甲'},
+  lab:{name:'科研风',img:'youbao_lab.jpg',desc:'🧪 手举试管'},
+  tshirt:{name:'白T恤',img:'youbao_tshirt.jpg',desc:'👕 清爽日常'},
+  gown:{name:'学士服',img:'youbao_gown.jpg',desc:'🎓 毕业盛典'},
+  scarf:{name:'红围巾',img:'youbao_scarf.jpg',desc:'🧣 暖心冬日'},
+  postman:{name:'信使款',img:'youbao_postman.jpg',desc:'📮 邮电本源'}
+};
+const AI_KEYS=['none','sport','casual','denim','lab','tshirt','gown','scarf','postman'];
+function pickAI(btn,key){document.querySelectorAll('#aiRow .cbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');customState.ai=key;document.getElementById('curAI').textContent=key==='none'?'原创经典':AI_OUTFITS[key].name;applyCustom();}
+
+/* 服装已改用 AI 整装造型整图（AI_OUTFITS，见上），不再使用 SVG 叠层绘制衣服 */
+
+// 发型覆盖：用身体色矩形覆盖爆炸头区域，留出脸部
+const BODY_HEX={'邮宝绿':'#57b848','重邮蓝':'#4a90d9','暖阳橙':'#f0a63c','樱花粉':'#e05a7a','星空紫':'#9b6dd6','薄荷青':'#38b8a8'};
+const HAIR_CLIPS={
+  original:'', // 不覆盖（保留原始爆炸头）
+  short:{cover:'inset(0% 0% 63% 0%)',face:'inset(15% 22% 66% 22%)',draw:'short'},
+  bowl:{cover:'inset(0% 0% 63% 0%)',face:'inset(15% 22% 66% 22%)',draw:'bowl'},
+  bald:{cover:'inset(0% 0% 63% 0%)',face:'inset(15% 22% 66% 22%)',draw:'bald'},
+};
+
+function applyCustom(){
+  const img=document.getElementById('customImg');
+  const yb=document.getElementById('customYoubao');
+  const aiKey=(customState.ai&&customState.ai!=='none')?customState.ai:null;
+  const isAI=!!(aiKey&&AI_OUTFITS[aiKey]);
+  // AI整装模式：锁定DIY项、隐藏闪电叠层、舞台标签联动
+  document.querySelectorAll('.ctrl-group[data-diy]').forEach(g=>g.classList.toggle('diy-lock',isAI));
+  const aiTip=document.getElementById('aiTip');if(aiTip)aiTip.style.display=isAI?'block':'none';
+  img.classList.toggle('ai-mode',isAI);
+  yb.classList.toggle('thinking',!isAI);
+  yb.querySelectorAll('.bolt-halo,.bolt-svg').forEach(el=>el.style.display=isAI?'none':'');
+  const stg=document.querySelector('#customizeMask .stage-tag');if(stg)stg.textContent=isAI?('AI造型 · '+AI_OUTFITS[aiKey].name+' '+AI_OUTFITS[aiKey].desc):'实时预览';
+  yb.style.animation='none';
+  if(customState.pose==='wiggle')yb.style.animation='poseWiggle 1.4s ease-in-out infinite';
+  if(customState.pose==='float')yb.style.animation='poseFloat 2.2s ease-in-out infinite';
+  if(isAI){img.src=AI_OUTFITS[aiKey].img;img.style.filter='none';const hl=document.getElementById('hairLayer');if(hl)hl.innerHTML='';return;}
+  img.src=COLOR_IMGS[customState.colorName]||'youbao.png';
+  img.style.filter='none';
+  // 发型：直接叠加SVG覆盖原爆炸头（不用clip-path，更稳定）
+  const hairLayer=document.getElementById('hairLayer');
+  if(hairLayer){
+    let html='';
+    if(customState.hair==='short')html+='<svg viewBox="0 0 542 837" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3"><path d="M110,300 Q271,60 432,300 L432,250 Q350,120 271,110 Q192,120 110,250 Z" fill="#1a1a1a"/><ellipse cx="271" cy="285" rx="180" ry="30" fill="#1a1a1a"/></svg>';
+    else if(customState.hair==='bowl')html+='<svg viewBox="0 0 542 837" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3"><path d="M100,310 Q271,70 442,310 L442,260 Q271,130 100,260 Z" fill="#1a1a1a"/><path d="M100,265 Q271,135 442,265" fill="none" stroke="#0a0a0a" stroke-width="6"/></svg>';
+    else if(customState.hair==='bald'){const bodyHex=BODY_HEX[customState.colorName]||'#57b848';html+='<svg viewBox="0 0 542 837" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3"><ellipse cx="271" cy="240" rx="190" ry="200" fill="'+bodyHex+'"/><ellipse cx="271" cy="380" rx="175" ry="100" fill="'+bodyHex+'"/></svg>';}
+    hairLayer.innerHTML=html;
+  }
+}
+
+function saveYoubao(){const aiN=(customState.ai&&customState.ai!=='none')?AI_OUTFITS[customState.ai].name+' · ':'';demoToast('💾 已保存「'+aiN+customState.colorName+' · '+customState.hairName+'」');}
+function shareYoubao(){saveYoubao();demoToast('🚀 已分享到形象墙！');setTimeout(()=>document.getElementById('wallGrid').scrollIntoView({behavior:'smooth'}),300);}
+function wallLike(el,base){const l=el.classList.toggle('liked');el.textContent=(l?(parseInt(el.textContent)||base)+1:(parseInt(el.textContent)||base)-1);if(l)demoToast('❤ 点赞成功！');}
+
+/* 草稿 & 历史形象 */
+function saveDraft(){const snap={...customState,id:Date.now()};drafts.unshift(snap);renderDrafts();demoToast('📋 草稿已保存');}
+function renderDrafts(){const grid=document.getElementById('draftGrid');if(!drafts.length){grid.innerHTML='<div class="draft-empty">暂无草稿，点击「存草稿」保存当前形象</div>';return;}
+  grid.innerHTML=drafts.map((d,i)=>{
+    const isAI=d.ai&&d.ai!=='none';
+    const src=isAI?AI_OUTFITS[d.ai].img:(COLOR_IMGS[d.colorName]||'youbao.png');
+    const nm=isAI?(AI_OUTFITS[d.ai].name+' · '+AI_OUTFITS[d.ai].desc):(d.colorName+'·'+d.hairName);
+    return '<div class="draft-card" onclick="restoreDraft('+i+')"><div class="dc-del" onclick="event.stopPropagation();delDraft('+i+')">✕</div><div class="dc-stage"><div class="youbao"><img src="'+src+'"><div class="bolt-halo"></div></div></div><div class="dc-name">'+nm+'</div></div>';
+  }).join('');
+}
+function restoreDraft(i){const d=drafts[i];Object.assign(customState,d);applyCustom();// 同步按钮状态
+  const aiIdx=AI_KEYS.indexOf(d.ai||'none');
+  document.querySelectorAll('#aiRow .cbtn').forEach((b,j)=>b.classList.toggle('on',j===aiIdx));
+  document.getElementById('curAI').textContent=(d.ai&&d.ai!=='none')?AI_OUTFITS[d.ai].name:'原创经典';
+  document.querySelectorAll('#colorSwatches .swatch').forEach((s,j)=>s.classList.toggle('on',j===Object.keys(COLOR_IMGS).indexOf(d.colorName)));
+  document.getElementById('curColor').textContent=d.colorName||'邮宝绿';
+  const isAI=d.ai&&d.ai!=='none';
+  demoToast('✅ 已恢复草稿：'+(isAI?AI_OUTFITS[d.ai].name:d.colorName+'·'+d.hairName));
+}
+function delDraft(i){drafts.splice(i,1);renderDrafts();demoToast('草稿已删除');}
+
+/* toast */
+function demoToast(msg){const old=document.querySelector('.toast');if(old)old.remove();const t=document.createElement('div');t.className='toast';t.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#345;color:#fff;padding:10px 22px;border-radius:12px;font-size:13px;z-index:99;box-shadow:0 8px 20px rgba(0,0,0,.2)';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),1800);}
+
+// 自动演示思考态
+setTimeout(()=>{setThinking(true);setTimeout(()=>setThinking(false),1800);},800);
+/* ===== 资源完整性自检（启动后校验图片资产，缺失时顶部提示，避免裂图难排查） ===== */
+(function(){
+  const files=['youbao.png','youbao_postman.jpg','youbao_sport.jpg','youbao_casual.jpg','youbao_denim.jpg','youbao_lab.jpg','youbao_tshirt.jpg','youbao_gown.jpg','youbao_scarf.jpg','youbao_blue.png','youbao_orange.png','youbao_pink.png','youbao_purple.png','youbao_mint.png'].concat((typeof CAT_HASHES!=='undefined'?CAT_HASHES:[]).map(h=>'cats/'+h.f));
+  let miss=0,done=0;
+  const finish=()=>{done++;if(done===files.length&&miss>0){const bar=document.createElement('div');bar.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#fff7e6;color:#a15c00;font-size:12px;line-height:1.6;padding:9px 16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08)';bar.innerHTML='⚠️ 资源自检：'+miss+' 个图片文件未找到 —— 请确认邮宝图片与 cats/ 文件夹和本页面放在<b>同一目录</b>后刷新';document.body.appendChild(bar);}};
+  files.forEach(f=>{const im=new Image();im.onload=finish;im.onerror=()=>{miss++;finish();};im.src=f;});
+})();
+</script>
+</body>
+</html>
